@@ -1,0 +1,634 @@
+\documentclass[11pt, a4paper]{article}
+
+% ─── Encodage et langue ───
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+
+% ─── Maths ───
+\usepackage{amsmath, amssymb, amsthm}
+
+% ─── Mise en page ───
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{float}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, positioning, fit, backgrounds, calc}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, linkcolor=blue!60!black, urlcolor=blue!70!black}
+
+% ─── Commandes ───
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\Ltwo}{L^2(\mathcal{T})}
+\newcommand{\Dp}{D_p}
+\newcommand{\Dw}{D_w}
+\newcommand{\DK}{D_K}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Définition}[section]
+\theoremstyle{remark}
+\newtheorem{remarque}{Remarque}[section]
+
+% ─── Couleurs thème ───
+\definecolor{func}{HTML}{2166AC}
+\definecolor{vect}{HTML}{B2182B}
+\definecolor{mix}{HTML}{4DAF4A}
+\definecolor{gris}{HTML}{666666}
+
+% ============================================================================
+\title{%
+  \textbf{Architecture des distances} \\[0.3em]
+  \Large Pour la classification non supervisée de données mixtes \\[0.2em]
+  \large Fonctionnel $\times$ Vectoriel
+}
+\author{Pierre}
+\date{Mars 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Ce document centralise l'étude de toutes les distances utilisées dans le
+pipeline de classification non supervisée de données mixtes
+(fonctionnelles + vectorielles). On y définit chaque distance, ses paramètres,
+son interprétation géométrique, et comment elles s'articulent dans une
+architecture à deux niveaux. Le document est auto-suffisant et indépendant
+du jeu de données.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+% ============================================================================
+% ============================================================================
+\part{Le problème : mesurer la similarité entre objets mixtes}
+% ============================================================================
+% ============================================================================
+
+\section{Nature des données}
+
+Chaque individu $i = 1, \ldots, n$ possède deux types d'information :
+\[
+  \text{Individu } i : \quad
+  \underbrace{\hat{X}_i(t) \in \Ltwo}_{\text{courbe (fonctionnel)}}
+  \quad + \quad
+  \underbrace{Z_i = (z_{i1}, \ldots, z_{ip}) \in \R^p}_{\text{vecteur (classique)}}.
+\]
+
+\textbf{Le défi.} Ces deux objets vivent dans des \textbf{espaces différents}
+($\Ltwo$ vs $\R^p$). On ne peut pas les empiler dans un même vecteur ni
+calculer une distance euclidienne entre eux. Il faut une architecture de
+distances qui :
+\begin{enumerate}[nosep]
+  \item mesure la dissimilarité \textbf{fonctionnelle} (entre courbes),
+  \item mesure la dissimilarité \textbf{vectorielle} (entre vecteurs de $\R^p$),
+  \item \textbf{combine} les deux de manière contrôlée.
+\end{enumerate}
+
+\section{Vue d'ensemble}
+
+L'architecture est organisée en \textbf{deux niveaux} hiérarchiques :
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    base/.style={draw, rounded corners=4pt, minimum width=2.8cm, minimum height=1cm, align=center, font=\small\bfseries},
+    fleche/.style={-{Stealth[length=3mm]}, thick},
+    etiq/.style={font=\footnotesize\itshape, text=gris},
+  ]
+
+  % Briques de base
+  \node[base, fill=func!15, text=func] (D0) {$D_0$\\{\footnotesize niveau}};
+  \node[base, fill=func!15, text=func, right=1.2cm of D0] (D1) {$D_1$\\{\footnotesize forme}};
+  \node[base, fill=vect!15, text=vect, right=3cm of D1] (Ds) {$D_s$\\{\footnotesize vectoriel}};
+
+  % Dp
+  \node[base, fill=func!25, text=func, below=1.5cm of $(D0)!0.5!(D1)$] (Dp) {$\Dp(\alpha)$\\{\footnotesize combinée}};
+
+  % Dw et DK
+  \node[base, fill=mix!20, text=mix!70!black, below=1.5cm of $(Dp)!0.5!(Ds)$, xshift=-1.2cm] (Dw) {$\Dw(\alpha, \omega)$\\{\footnotesize pondérée}};
+  \node[base, fill=mix!20, text=mix!70!black, right=1.5cm of Dw] (DK) {$\DK(\alpha)$\\{\footnotesize noyaux}};
+
+  % Flèches
+  \draw[fleche, func!70] (D0) -- (Dp) node[etiq, midway, left=2pt] {$1-\alpha$};
+  \draw[fleche, func!70] (D1) -- (Dp) node[etiq, midway, right=2pt] {$\alpha$};
+  \draw[fleche, func!70] (Dp) -- (Dw) node[etiq, midway, left=2pt] {$\omega$};
+  \draw[fleche, vect!70] (Ds) -- (Dw) node[etiq, midway, right=2pt] {$1-\omega$};
+  \draw[fleche, func!70] (Dp) -- (DK) node[etiq, midway, left=2pt] {$K_f$};
+  \draw[fleche, vect!70] (Ds) -- (DK) node[etiq, midway, right=2pt] {$K_s$};
+
+  % Niveaux
+  \node[font=\footnotesize\scshape, text=gris, left=0.3cm of D0, yshift=0cm] {Niveau 0};
+  \node[font=\footnotesize\scshape, text=gris, left=0.3cm of Dp, yshift=0cm] {Niveau 1};
+  \node[font=\footnotesize\scshape, text=gris, left=0.3cm of Dw, yshift=0cm] {Niveau 2};
+
+  % Cadres de fond
+  \begin{scope}[on background layer]
+    \node[fit=(D0)(D1), draw=func!30, dashed, rounded corners=8pt, inner sep=10pt, fill=func!3] {};
+    \node[fit=(Ds), draw=vect!30, dashed, rounded corners=8pt, inner sep=10pt, fill=vect!3] {};
+  \end{scope}
+
+\end{tikzpicture}
+\caption{Architecture à deux niveaux. \textcolor{func}{Bleu} = fonctionnel,
+\textcolor{vect}{rouge} = vectoriel, \textcolor{mix}{vert} = mixte.}
+\label{fig:archi}
+\end{figure}
+
+\newpage
+% ============================================================================
+% ============================================================================
+\part{Niveau 0 — Les briques de base}
+% ============================================================================
+% ============================================================================
+
+% ────────────────────────────────────────────────────────────────────────
+\section{$D_0$ : distance $L^2$ entre courbes}
+% ────────────────────────────────────────────────────────────────────────
+
+\begin{definition}[$D_0$]
+\[
+  D_0(i,j) = \left\| \hat{X}_i - \hat{X}_j \right\|_{L^2}
+  = \sqrt{\int_{\mathcal{T}} \bigl[\hat{X}_i(t) - \hat{X}_j(t)\bigr]^2 \, dt}
+\]
+\end{definition}
+
+\paragraph{Ce qu'elle mesure.}
+La \textbf{proximité globale des profils}. C'est la racine carrée de l'aire
+entre les deux courbes (au carré). Deux courbes au même \textbf{niveau}
+mais légèrement décalées en phase seront proches en $D_0$.
+
+\paragraph{Forces.}
+\begin{itemize}[nosep]
+  \item Interprétation intuitive : <<~l'aire entre les courbes~>>.
+  \item Pas de paramètre.
+  \item Exploite la norme naturelle de $\Ltwo$.
+\end{itemize}
+
+\paragraph{Faiblesses.}
+\begin{itemize}[nosep]
+  \item Sensible uniquement au \textbf{niveau} (écart vertical).
+  \item Deux courbes de même forme mais translatées verticalement seront
+    éloignées, même si leur dynamique est identique.
+  \item Insensible aux différences de \textbf{forme} si les niveaux sont
+    proches.
+\end{itemize}
+
+\paragraph{Calcul numérique.}
+L'intégrale est approchée par somme de Riemann sur $M = 1000$ points
+équidistants :
+\[
+  D_0(i,j) \approx \sqrt{\sum_{m=1}^{M} \bigl[\hat{X}_i(t_m) - \hat{X}_j(t_m)\bigr]^2 \cdot \Delta t}, \qquad
+  \Delta t = \frac{|\mathcal{T}|}{M - 1}.
+\]
+
+% ────────────────────────────────────────────────────────────────────────
+\section{$D_1$ : distance $L^2$ entre dérivées}
+% ────────────────────────────────────────────────────────────────────────
+
+\begin{definition}[$D_1$]
+\[
+  D_1(i,j) = \left\| \hat{X}_i' - \hat{X}_j' \right\|_{L^2}
+  = \sqrt{\int_{\mathcal{T}} \bigl[\hat{X}_i'(t) - \hat{X}_j'(t)\bigr]^2 \, dt}
+\]
+\end{definition}
+
+\paragraph{Ce qu'elle mesure.}
+La proximité des \textbf{dynamiques}. Deux courbes au même niveau mais dont
+l'une accélère plus vite seront proches en $D_0$ mais éloignées en $D_1$.
+
+\paragraph{Interprétation physique.}
+Si $X_i(t)$ est une température : $X_i'(t)$ est la \textbf{vitesse de
+changement} de la température. Deux stations dont la température chute à des
+rythmes très différents en automne auront un $D_1$ élevé, même si leurs
+températures moyennes sont similaires.
+
+\paragraph{Forces.}
+\begin{itemize}[nosep]
+  \item Capture la \textbf{forme} indépendamment du niveau.
+  \item Utile quand les dynamiques importent plus que les valeurs absolues.
+\end{itemize}
+
+\paragraph{Faiblesses.}
+\begin{itemize}[nosep]
+  \item Sensible au \textbf{bruit} : la dérivée amplifie les fluctuations
+    rapides. Un lissage insuffisant rend $D_1$ très bruitée.
+  \item Insensible aux différences de niveau : deux courbes parallèles
+    (même forme, niveau différent) ont $D_1 = 0$.
+  \item Nécessite un lissage préalable (les données brutes ne sont pas
+    dérivables).
+\end{itemize}
+
+\begin{remarque}[Lien avec la pénalité de lissage]
+La pénalité $\lambda \int [\hat{X}''(t)]^2 dt$ du lissage (étape 01)
+contrôle la régularité de la dérivée \emph{seconde}. Si $\lambda$ est trop
+petit, les dérivées \emph{premières} sont erratiques et $D_1$ est dominée
+par le bruit. Le choix de $\lambda$ par GCV est donc crucial pour la qualité
+de $D_1$.
+\end{remarque}
+
+\paragraph{Échelle.}
+$D_0$ et $D_1$ sont sur des échelles \textbf{très différentes}. Sur Canadian
+Weather : $D_0 \in [3.9, 532]$ mais $D_1 \in [0.51, 6.61]$ (facteur
+$\sim\!80$). D'où la nécessité de normaliser avant toute combinaison.
+
+% ────────────────────────────────────────────────────────────────────────
+\section{$D_s$ : distance euclidienne sur $Z$}
+% ────────────────────────────────────────────────────────────────────────
+
+\begin{definition}[$D_s$]
+\[
+  D_s(i,j) = \left\| Z_i^{\text{std}} - Z_j^{\text{std}} \right\|_2
+  = \sqrt{\sum_{l=1}^{p} \left( \frac{z_{il} - \bar{z}_l}{\sigma_{z_l}} \right)^2
+    - \left( \frac{z_{jl} - \bar{z}_l}{\sigma_{z_l}} \right)^2}
+\]
+où $Z^{\text{std}} = (Z - \bar{Z}) / \sigma_Z$ est la standardisation
+variable par variable.
+\end{definition}
+
+\paragraph{Ce qu'elle mesure.}
+La proximité dans l'espace des variables classiques. Pour Canadian Weather :
+latitude, longitude, précipitations moyennes.
+
+\paragraph{Pourquoi standardiser~?}
+Sans standardisation, la latitude (en degrés, $\sim\!40\text{--}80$) dominerait
+les précipitations (en mm, $\sim\!1\text{--}4$). La standardisation met toutes
+les variables sur une même échelle (moyenne 0, variance 1).
+
+\paragraph{Forces.}
+\begin{itemize}[nosep]
+  \item Simple, pas de paramètre.
+  \item Interprétable : distance euclidienne classique.
+  \item Souvent très discriminante quand les variables $Z$ sont pertinentes.
+\end{itemize}
+
+\paragraph{Faiblesses.}
+\begin{itemize}[nosep]
+  \item Ignore totalement les courbes.
+  \item Suppose que toutes les variables $Z$ sont d'importance égale (après
+    standardisation), ce qui n'est pas garanti.
+\end{itemize}
+
+\newpage
+% ============================================================================
+% ============================================================================
+\part{Niveau 1 — La distance fonctionnelle combinée $\Dp(\alpha)$}
+% ============================================================================
+% ============================================================================
+
+\section{Motivation}
+
+$D_0$ capture le \textbf{niveau}, $D_1$ capture la \textbf{forme}. Pourquoi
+choisir ? On peut faire les deux avec un paramètre~$\alpha$.
+
+\section{Définition}
+
+\begin{definition}[$\Dp(\alpha)$]
+Soient $\tilde{D}_0 = D_0 / \max(D_0)$ et $\tilde{D}_1 = D_1 / \max(D_1)$
+les distances normalisées par leur maximum. Alors :
+\[
+  \boxed{
+    \Dp(\alpha) = \sqrt{(1 - \alpha) \cdot \tilde{D}_0^{\,2}
+    + \alpha \cdot \tilde{D}_1^{\,2}},
+    \qquad \alpha \in [0, 1]
+  }
+\]
+\end{definition}
+
+\section{Interprétation géométrique}
+
+$\Dp(\alpha)$ est une \textbf{norme pondérée} dans l'espace produit
+$(\tilde{D}_0, \tilde{D}_1)$. Quand on trace les iso-distances de $\Dp$ dans
+le plan $(\tilde{D}_0, \tilde{D}_1)$, on obtient des \textbf{ellipses} dont l'axe
+principal tourne avec $\alpha$ :
+
+\begin{center}
+\begin{tabular}{lcl}
+  \toprule
+  $\boldsymbol{\alpha}$ & \textbf{Poids} & \textbf{Signification} \\
+  \midrule
+  $0$ & $(1, 0)$ & Seul le \textbf{niveau} compte $\Rightarrow \Dp = \tilde{D}_0$ \\
+  $0.3$ & $(0.7, 0.3)$ & Surtout le niveau, un peu la forme \\
+  $0.5$ & $(0.5, 0.5)$ & Compromis \textbf{50/50} \\
+  $0.7$ & $(0.3, 0.7)$ & Surtout la forme \\
+  $1$ & $(0, 1)$ & Seule la \textbf{forme} compte $\Rightarrow \Dp = \tilde{D}_1$ \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\section{Pourquoi normaliser par le maximum~?}
+
+$D_0 \in [3.9, 532]$ et $D_1 \in [0.51, 6.61]$. Sans normalisation, avec
+$\alpha = 0.5$ :
+\[
+  \Dp \approx \sqrt{0.5 \cdot 532^2 + 0.5 \cdot 6.6^2} \approx 376,
+\]
+— $D_1$ ne pèse rien. Après normalisation, $\tilde{D}_0, \tilde{D}_1 \in [0,1]$
+et $\alpha = 0.5$ donne un vrai compromis 50/50.
+
+\begin{remarque}[Alternative : normalisation par la médiane]
+On pourrait normaliser par la médiane au lieu du maximum. Le max est sensible
+aux outliers, mais il garantit que $\tilde{D} \in [0, 1]$, ce qui rend
+l'interprétation de $\alpha$ plus transparente.
+\end{remarque}
+
+\section{$\Dp$ est une distance}
+
+$\Dp(\alpha)$ vérifie les axiomes d'une distance (pour tout $\alpha \in [0,1]$) :
+\begin{enumerate}[nosep]
+  \item \textbf{Positivité :} $\Dp \geq 0$, et $\Dp(i,j) = 0 \iff i = j$.
+  \item \textbf{Symétrie :} $\Dp(i,j) = \Dp(j,i)$.
+  \item \textbf{Inégalité triangulaire :} découle de l'inégalité de Minkowski
+    appliquée à $\ell^2$ pondéré.
+\end{enumerate}
+C'est important car PAM nécessite une \textbf{vraie} matrice de distances.
+
+\newpage
+% ============================================================================
+% ============================================================================
+\part{Niveau 2 — Les distances mixtes}
+% ============================================================================
+% ============================================================================
+
+On a maintenant $\Dp(\alpha)$ (fonctionnel) et $D_s$ (vectoriel). Deux
+stratégies pour les combiner :
+
+% ────────────────────────────────────────────────────────────────────────
+\section{$\Dw(\alpha, \omega)$ : pondération directe (stratégie B)}
+% ────────────────────────────────────────────────────────────────────────
+
+\subsection{Définition}
+
+\begin{definition}[$\Dw$]
+Soit $\tilde{D}_s = D_s / \max(D_s)$. Alors :
+\[
+  \boxed{
+    \Dw(\alpha, \omega) = \sqrt{\omega \cdot \Dp(\alpha)^2
+    + (1 - \omega) \cdot \tilde{D}_s^{\,2}},
+    \qquad \alpha, \omega \in [0, 1]
+  }
+\]
+\end{definition}
+
+\subsection{Les deux boutons}
+
+\begin{center}
+\begin{tikzpicture}[
+  bouton/.style={draw, circle, minimum size=1.5cm, thick, font=\large\bfseries},
+]
+  \node[bouton, fill=func!15, text=func] (alpha) {$\alpha$};
+  \node[right=0.3cm of alpha, font=\small, text=gris, align=left] {
+    Niveau $\longleftrightarrow$ Forme\\
+    {\footnotesize (dans le fonctionnel)}
+  };
+
+  \node[bouton, fill=mix!15, text=mix!70!black, right=4cm of alpha] (omega) {$\omega$};
+  \node[right=0.3cm of omega, font=\small, text=gris, align=left] {
+    Fonctionnel $\longleftrightarrow$ Vectoriel\\
+    {\footnotesize (entre les deux sources)}
+  };
+\end{tikzpicture}
+\end{center}
+
+\begin{center}
+\begin{tabular}{cll}
+  \toprule
+  $(\boldsymbol{\alpha}, \boldsymbol{\omega})$ & \textbf{Distance effective} & \textbf{En clair} \\
+  \midrule
+  $(*, 0)$ & $\tilde{D}_s$ & Que du vectoriel (courbes ignorées) \\
+  $(0, 1)$ & $\tilde{D}_0$ & Que le niveau des courbes \\
+  $(1, 1)$ & $\tilde{D}_1$ & Que la forme des courbes \\
+  $(0.5, 0.5)$ & Mix de tout & Compromis global \\
+  $(0, 0.3)$ & $\sqrt{0.3 \cdot \tilde{D}_0^2 + 0.7 \cdot \tilde{D}_s^2}$ & Surtout vectoriel, un peu de niveau \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Choix des paramètres : grid search 2D}
+
+On explore toutes les combinaisons
+$(\alpha, \omega) \in \{0, 0.1, \ldots, 1\}^2$ ($= 121$ points). Pour chacune :
+\begin{enumerate}[nosep]
+  \item Calculer $\Dp(\alpha)$.
+  \item Calculer $\Dw(\alpha, \omega)$.
+  \item Appliquer PAM ($k$ clusters) et mesurer la \textbf{silhouette moyenne}.
+\end{enumerate}
+On retient le couple $(\alpha^*, \omega^*)$ qui \textbf{maximise la silhouette}.
+
+\begin{remarque}[Critère de sélection]
+On utilise la silhouette (critère intrinsèque, pas de vérité terrain) pour
+choisir les paramètres. L'ARI (qui nécessite les vrais labels) n'est calculé
+qu'a posteriori pour évaluation. Cela garantit que la méthode reste non
+supervisée.
+\end{remarque}
+
+\subsection{Propriétés}
+
+\begin{itemize}[nosep]
+  \item $\Dw$ est une \textbf{vraie distance} (mêmes arguments que $\Dp$).
+  \item \textbf{Cas dégénérés} : si $\omega^* = 0$, le fonctionnel est inutile
+    sur ce jeu de données. Si $\omega^* = 1$, le vectoriel est inutile.
+  \item Le grid search est exact sur la grille mais ne teste pas les valeurs
+    entre les pas de 0.1. Affiner la grille (pas de 0.05) est possible mais
+    coûteux.
+\end{itemize}
+
+% ────────────────────────────────────────────────────────────────────────
+\section{$\DK(\alpha)$ : distance à noyaux (stratégie C)}
+% ────────────────────────────────────────────────────────────────────────
+
+\subsection{Idée}
+
+Au lieu de pondérer des distances, on passe par des
+\textbf{fonctions noyaux} (kernel functions) qui mesurent la
+\emph{similarité} (pas la dissimilarité). On les combine par produit, puis on
+reconvertit en distance.
+
+\subsection{Noyaux gaussiens}
+
+\begin{definition}[Noyau gaussien]
+Pour une distance $D$ et une largeur de bande $\sigma > 0$ :
+\[
+  K(i,j) = \exp\!\left( -\frac{D(i,j)^2}{2\sigma^2} \right).
+\]
+\end{definition}
+
+\begin{itemize}[nosep]
+  \item $K(i,j) \in [0, 1]$ : 1 si identiques, $\to 0$ si très éloignés.
+  \item $\sigma$ contrôle la \textbf{portée} : petit $\sigma$ = seuls les très
+    proches ont $K \approx 1$ ; grand $\sigma$ = tout le monde est similaire.
+\end{itemize}
+
+\subsection{Construction de $\DK$}
+
+\begin{definition}[$\DK(\alpha)$]
+\begin{align}
+  K_f(i,j) &= \exp\!\left( -\frac{\Dp(\alpha)_{ij}^2}{2\sigma_f^2} \right),
+  & \sigma_f &= \mathrm{m\acute{e}diane}\{\Dp(\alpha)_{ij} : i < j\},
+  \label{eq:Kf} \\
+  K_s(i,j) &= \exp\!\left( -\frac{D_s(i,j)^2}{2\sigma_s^2} \right),
+  & \sigma_s &= \mathrm{m\acute{e}diane}\{D_s(i,j) : i < j\},
+  \label{eq:Ks} \\
+  K(i,j) &= K_f(i,j) \cdot K_s(i,j), & & \text{(produit de noyaux)}
+  \label{eq:Kprod} \\
+  \DK(i,j) &= \sqrt{K(i,i) + K(j,j) - 2K(i,j)}. & &
+  \label{eq:DK}
+\end{align}
+\end{definition}
+
+\subsection{Pourquoi le produit~?}
+
+Le noyau produit $K = K_f \cdot K_s$ signifie que deux individus ne sont
+similaires \textbf{que s'ils le sont sur les deux sources simultanément}.
+Si $K_f(i,j) \approx 0$ (courbes très différentes), alors
+$K(i,j) \approx 0$ même si $K_s(i,j) = 1$ (vecteurs identiques).
+
+C'est une forme de \textbf{ET logique flou} entre les deux sources.
+
+\subsection{Heuristique de la médiane pour $\sigma$}
+
+Le choix de $\sigma$ est crucial. Trop petit : $K \approx I_n$ (matrice
+identité, tout est dissimilaire). Trop grand : $K \approx \mathbf{1}$
+(tout est similaire).
+
+L'\textbf{heuristique de la médiane} (Jaakkola \& Haussler, 1999) fixe
+$\sigma$ à la médiane de toutes les distances non nulles. Cela garantit
+qu'environ la moitié des paires ont $K > 0.5$ et l'autre moitié $K < 0.5$
+— un bon équilibre.
+
+\subsection{Paramètre}
+
+$\DK$ n'a \textbf{pas de paramètre $\omega$} : le produit de noyaux combine
+les sources automatiquement. Le seul paramètre libre est $\alpha$ (dans $\Dp$),
+optimisé par grid search 1D sur $\{0, 0.1, \ldots, 1\}$.
+
+\subsection{$\DK$ est-elle une distance~?}
+
+$\DK$ vérifie positivité, symétrie et inégalité triangulaire si et seulement
+si la matrice $K$ est \textbf{semi-définie positive} (s.d.p.). Le noyau
+gaussien est s.d.p. Le produit de noyaux s.d.p.\ est s.d.p. (théorème de
+Schur). Donc $K = K_f \cdot K_s$ est s.d.p., et $\DK$ est une distance valide.
+
+\newpage
+% ============================================================================
+% ============================================================================
+\part{Comparaison des stratégies}
+% ============================================================================
+% ============================================================================
+
+\section{Tableau récapitulatif}
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{p{2.8cm}ccp{4.5cm}c}
+  \toprule
+  \textbf{Distance} & \textbf{Source} & \textbf{Paramètres} & \textbf{Méthode de choix} & \textbf{Clustering} \\
+  \midrule
+  $D_0$ & Fonct. & 0 & — & PAM \\
+  $D_1$ & Fonct. & 0 & — & PAM \\
+  $D_s$ & Vect. & 0 & — & PAM \\
+  \midrule
+  $\Dp(\alpha)$ & Fonct. & 1 ($\alpha$) & Grid search (sil.) & PAM \\
+  \midrule
+  $\Dw(\alpha, \omega)$ & Mixte & 2 ($\alpha, \omega$) & Grid search 2D (sil.) & PAM \\
+  $\DK(\alpha)$ & Mixte & 1 ($\alpha$) + $\sigma$ auto & Grid search 1D (sil.) & PAM \\
+  \midrule
+  \multicolumn{5}{l}{\textit{Stratégie A (pas de matrice de distances)}} \\
+  $W = [\xi \,|\, Z]$ & Mixte & $K$ (nb scores) & Var.\ cumulée $\geq 95\%$ & k-means \\
+  \bottomrule
+\end{tabular}
+\caption{Récapitulatif de toutes les approches.}
+\label{tab:recap}
+\end{table}
+
+\section{Quand utiliser quoi~?}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{p{4.5cm}p{8cm}}
+  \toprule
+  \textbf{Situation} & \textbf{Distance recommandée} \\
+  \midrule
+  Pas de variables $Z$ & $\Dp(\alpha)$ seul, optimiser $\alpha$ \\
+  $Z$ disponible, on veut un contrôle explicite & $\Dw(\alpha, \omega)$ \\
+  $Z$ disponible, on veut du <<~sans paramètre~>> & $\DK(\alpha)$ \\
+  Peu de données, besoin de rapidité & Stratégie A (k-means) \\
+  Les formes comptent plus que les niveaux & Tester $\alpha > 0.5$ \\
+  Les niveaux suffisent & $\alpha = 0$ (revient à $D_0$) \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\section{Forces et limites de l'architecture}
+
+\paragraph{Forces.}
+\begin{itemize}[nosep]
+  \item \textbf{Modulaire} : chaque brique peut être remplacée ($D_1 \to D_2$
+    pour les dérivées secondes, $D_s$ euclidienne $\to$ Mahalanobis, etc.).
+  \item \textbf{Interprétable} : $\alpha$ et $\omega$ ont un sens clair.
+  \item \textbf{Toutes les distances sont valides} dans le sens métrique
+    (axiomes vérifiés).
+  \item \textbf{Cas limites cohérents} : $\omega = 0 \Rightarrow$ vectoriel
+    pur, $\alpha = 0 \Rightarrow D_0$, etc.
+\end{itemize}
+
+\paragraph{Limites.}
+\begin{itemize}[nosep]
+  \item Le \textbf{grid search} est coûteux ($121 \times$ PAM pour la
+    stratégie B). Alternatives : Bayesian optimization, descente de gradient
+    (mais la silhouette n'est pas dérivable).
+  \item La \textbf{normalisation par le maximum} est sensible aux outliers.
+  \item Le critère de la \textbf{silhouette} peut ne pas correspondre au vrai
+    objectif de clustering.
+  \item Si $\Dp$ est redondant avec $D_s$ (comme sur Canadian Weather), le
+    système ne peut rien y faire — c'est une propriété des données, pas de
+    la méthode.
+\end{itemize}
+
+\newpage
+% ============================================================================
+% ============================================================================
+\part{Annexe : résultats sur Canadian Weather}
+% ============================================================================
+% ============================================================================
+
+\section{Valeurs numériques des distances}
+
+\begin{center}
+\begin{tabular}{lrrl}
+  \toprule
+  \textbf{Distance} & \textbf{Min} (hors 0) & \textbf{Max} & \textbf{Unité} \\
+  \midrule
+  $D_0$ & 3.9  & 532.1 & °C$\cdot$jours$^{1/2}$ \\
+  $D_1$ & 0.51 & 6.61  & °C$\cdot$jours$^{-1/2}$ \\
+  $D_s$ & 0.07 & 5.68  & sans unité (standardisé) \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\section{Résultats du grid search}
+
+\begin{center}
+\begin{tabular}{lccccc}
+  \toprule
+  \textbf{Stratégie} & $\boldsymbol{\alpha^*}$ & $\boldsymbol{\omega^*}$ & \textbf{Sil.} & \textbf{ARI} & \textbf{Interprétation} \\
+  \midrule
+  $D_0$ seul   & — & — & 0.285 & 0.229 & Fonctionnel seul insuffisant \\
+  $D_s$ seul   & — & — & 0.448 & 0.616 & Vectoriel fort \\
+  A (FPCA+Z)   & — & — & 0.395 & \textbf{0.748} & Meilleur ARI \\
+  B $(\Dw)$    & 0.0 & 0.0 & \textbf{0.448} & 0.616 & $= D_s$ seul \\
+  C $(\DK)$    & 0.0 & — & 0.329 & 0.686 & Noyaux ajoutent un peu \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\paragraph{Diagnostic.}
+$\alpha^* = 0$ et $\omega^* = 0$ : les deux paramètres tombent sur les
+\textbf{coins} de la grille. Cela signifie que sur Canadian Weather, les
+variables vectorielles (latitude, longitude) sont quasi-suffisantes et les
+courbes n'apportent pas d'information complémentaire (voir rapport principal
+pour le diagnostic complet).
+
+\end{document}

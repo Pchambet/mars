@@ -7,9 +7,13 @@
 *.aux
 *.log
 *.out
+*.toc
 *.synctex.gz
 *.fdb_latexmk
 *.fls
+
+# PDF outputs (regenerable from .tex)
+docs/*.pdf
 
 # OS files
 .DS_Store
@@ -18,3 +22,6 @@ Thumbs.db
 # Large data outputs (keep raw data in data/)
 *.rds
 !data/*.rds
+
+# Archive (old files moved here during cleanup)
+_archive/

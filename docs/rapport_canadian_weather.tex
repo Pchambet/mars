@@ -1,0 +1,915 @@
+\documentclass[11pt, a4paper]{article}
+
+% ─── Encodage et langue ───
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+
+% ─── Maths ───
+\usepackage{amsmath, amssymb, amsthm}
+
+% ─── Mise en page ───
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, linkcolor=blue!60!black, citecolor=green!50!black, urlcolor=blue!70!black}
+
+% ─── Code R ───
+\usepackage{listings}
+\lstset{
+  language=R,
+  basicstyle=\small\ttfamily,
+  keywordstyle=\color{blue!70!black}\bfseries,
+  commentstyle=\color{green!50!black}\itshape,
+  stringstyle=\color{red!60!black},
+  numbers=left, numberstyle=\tiny\color{gray},
+  frame=single, framerule=0.4pt,
+  breaklines=true, showstringspaces=false,
+  tabsize=2
+}
+
+% ─── Commandes personnalisées ───
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Var}{\mathrm{Var}}
+\newcommand{\Ltwo}{L^2(\mathcal{T})}
+\newcommand{\Dp}{D_p}
+\newcommand{\Dw}{D_w}
+\newcommand{\DK}{D_K}
+
+% ─── Théorèmes ───
+\theoremstyle{definition}
+\newtheorem{definition}{Définition}[section]
+\theoremstyle{remark}
+\newtheorem{remarque}{Remarque}[section]
+
+% ============================================================================
+\title{%
+  \textbf{Rapport complet} \\[0.3em]
+  \Large Classification non supervisée de données fonctionnelles mixtes \\[0.2em]
+  \large Application au jeu de données Canadian Weather
+}
+\author{Pierre}
+\date{Mars 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Ce rapport documente l'intégralité du travail réalisé sur le jeu de données
+\texttt{CanadianWeather} du package R \texttt{fda}. L'objectif est de tester et
+comparer trois stratégies de classification non supervisée pour des données
+\textbf{mixtes} : une composante \textbf{fonctionnelle} (courbes de température
+journalière) et une composante \textbf{vectorielle} (latitude, longitude,
+précipitations). Le pipeline complet va du lissage par B-splines pénalisées
+jusqu'au clustering, en passant par l'ACP fonctionnelle et le calcul de
+plusieurs distances. Les résultats sont évalués par silhouette et ARI (Adjusted
+Rand Index) en référence aux 4 régions climatiques connues. Ce travail sert
+de \textbf{prototype} pour l'application future aux données océanographiques
+du SHOM.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+% ============================================================================
+% ============================================================================
+\part{Le jeu de données}
+% ============================================================================
+% ============================================================================
+
+\section{Présentation de Canadian Weather}
+
+Le jeu de données \texttt{CanadianWeather}, inclus dans le package R
+\texttt{fda} \cite{ramsay2005}, contient les moyennes climatiques journalières
+pour $n = 35$ stations météorologiques réparties sur l'ensemble du territoire
+canadien.
+
+\subsection{Composante fonctionnelle : températures}
+
+Pour chaque station $i \in \{1, \ldots, 35\}$, on dispose de la température
+moyenne quotidienne sur un an :
+\[
+  Y_{ij} = X_i(t_j) + \varepsilon_{ij}, \quad j = 1, \ldots, 365,
+\]
+où $t_j$ est le $j$-ème jour de l'année. Cela produit une matrice
+$\mathbf{Y} \in \R^{365 \times 35}$. Chaque colonne est une
+\textbf{courbe discrète} de température.
+
+\subsection{Composante vectorielle : variables géographiques}
+
+Pour chaque station, on dispose de trois variables scalaires :
+\[
+  Z_i = \begin{pmatrix} \text{latitude}_i \\ \text{longitude}_i \\ \text{précipitations}_i \end{pmatrix} \in \R^3.
+\]
+Les précipitations sont calculées comme la moyenne journalière
+($\bar{\text{Precip}}_i = \frac{1}{365} \sum_j \text{Precip}_{ij}$).
+Ces variables forment la matrice $\mathbf{Z} \in \R^{35 \times 3}$.
+
+\subsection{Vérité terrain : les 4 régions}
+
+Chaque station est classée dans l'une des 4 régions climatiques :
+\begin{center}
+\begin{tabular}{lrl}
+  \toprule
+  \textbf{Région} & \textbf{Nb stations} & \textbf{Caractéristiques} \\
+  \midrule
+  Arctic       & 3  & Nord, froid extrême, faible amplitude \\
+  Atlantic     & 15 & Côte est, hivers modérés, précipitations élevées \\
+  Continental  & 12 & Centre, hivers très froids, étés chauds \\
+  Pacific      & 5  & Côte ouest, climat tempéré, faible amplitude \\
+  \bottomrule
+\end{tabular}
+\end{center}
+Ces étiquettes ne sont \textbf{jamais utilisées} par les algorithmes de
+clustering (classification non supervisée). Elles servent uniquement
+\textbf{a posteriori} pour évaluer la qualité des regroupements trouvés,
+via l'ARI (section~\ref{sec:ari}).
+
+\subsection{Pourquoi ce jeu de données ?}
+
+Canadian Weather est le jeu de données canonique en analyse de données
+fonctionnelles (FDA). Il présente plusieurs avantages pour notre travail :
+\begin{itemize}[nosep]
+  \item \textbf{Petite taille} ($n = 35$) : permet des itérations rapides.
+  \item \textbf{Données mixtes} : courbes + variables scalaires.
+  \item \textbf{Vérité terrain connue} : les 4 régions climatiques.
+  \item \textbf{Structure claire} : les courbes arctiques, continentales,
+    atlantiques et pacifiques sont visuellement distinctes.
+\end{itemize}
+
+\newpage
+% ============================================================================
+% ============================================================================
+\part{Pipeline complet}
+% ============================================================================
+% ============================================================================
+
+Le pipeline est organisé en 6 scripts exécutés séquentiellement :
+\begin{center}
+\begin{tabular}{rll}
+  \toprule
+  \textbf{Script} & \textbf{Étape} & \textbf{Sortie principale} \\
+  \midrule
+  \texttt{00\_preprocess.R} & Chargement des données & $\mathbf{Y}$, $\mathbf{Z}$, régions \\
+  \texttt{01\_lissage.R}    & Lissage B-splines      & $\hat{X}_i(t) \in \Ltwo$ \\
+  \texttt{02\_fpca.R}       & FPCA                   & Scores $\xi_{ik}$ \\
+  \texttt{03\_distances.R}  & Calcul des distances   & $D_0, D_1, \Dp, D_s, \Dw, \DK$ \\
+  \texttt{04\_clustering.R} & Clustering (3 strat.)  & Labels, ARI, silhouette \\
+  \texttt{05\_visualisation.R} & Figures              & 8 figures PNG \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+% ============================================================================
+\section{Étape 0 : Prétraitement}
+\label{sec:preprocess}
+
+Le script \texttt{00\_preprocess.R} charge le dataset et prépare les objets :
+
+\begin{itemize}[nosep]
+  \item \texttt{Y\_brut} $\in \R^{365 \times 35}$ : températures brutes.
+  \item \texttt{Z} $\in \R^{35 \times 3}$ : latitude, longitude, précipitations.
+  \item \texttt{regions} : facteur à 4 niveaux (Arctic, Atlantic, Continental, Pacific).
+  \item \texttt{noms\_stations} : noms des 35 stations.
+\end{itemize}
+
+Les variables $Z$ sont aussi \textbf{standardisées} (\texttt{Z\_scaled = scale(Z)})
+pour que latitude, longitude et précipitations soient sur une même échelle
+avant le calcul des distances vectorielles.
+
+% ============================================================================
+\section{Étape 1 : Lissage par B-splines pénalisées}
+\label{sec:lissage}
+
+\subsection{Objectif}
+
+Passer des observations discrètes $Y_{ij}$ à des courbes continues
+$\hat{X}_i(t)$ évaluables en tout point $t \in [1, 365]$.
+
+\subsection{Modèle}
+
+On décompose chaque courbe sur une base de B-splines :
+\[
+  \hat{X}_i(t) = \sum_{k=1}^{d} \hat{\theta}_{ik} \, \psi_k(t),
+\]
+où les $\psi_k$ sont des B-splines d'ordre 4 (cubiques). Les coefficients
+$\hat{\theta}_{ik}$ sont estimés par moindres carrés pénalisés :
+\begin{equation}
+  \hat{\boldsymbol{\theta}}_i = \arg\min_{\boldsymbol{\theta}}
+  \left\{
+    \sum_{j=1}^{365} \left( Y_{ij} - \sum_{k=1}^{d} \theta_k \psi_k(t_j) \right)^2
+    + \lambda \int_1^{365} \left[ \hat{X}_i''(t) \right]^2 dt
+  \right\}.
+  \label{eq:lissage}
+\end{equation}
+
+\subsection{Choix des hyperparamètres}
+
+\paragraph{Nombre de bases : $d = 65$.}
+On place environ une base par semaine (365/65 $\approx$ 5.6 jours). Ce nombre
+est volontairement \textbf{sur-dimensionné} : la base a la capacité de produire
+des oscillations rapides, mais le paramètre $\lambda$ régule la régularité.
+C'est la philosophie \emph{<<~beaucoup de bases + pénalité~>>} recommandée par
+Ramsay \& Silverman \cite{ramsay2005}.
+
+\paragraph{Paramètre de pénalité : $\lambda$ par GCV.}
+Le paramètre $\lambda$ est choisi par \textbf{validation croisée généralisée}
+(GCV). On teste une grille logarithmique de 80 valeurs entre $10^{-2}$ et
+$10^{8}$, et on minimise :
+\[
+  \text{GCV}(\lambda) = \frac{1}{n} \sum_{i=1}^{n}
+  \frac{\| Y_i - \hat{X}_i^\lambda \|^2}{(1 - \text{df}(\lambda)/N)^2},
+\]
+où $\text{df}(\lambda) = \text{tr}(S_\lambda)$ est le nombre de degrés de
+liberté effectifs. Le minimum est atteint en :
+
+\begin{center}
+\fbox{$\lambda_{\text{GCV}} = 8.15 \quad (\log_{10} \lambda = 0.91)$}
+\end{center}
+
+\begin{remarque}
+La valeur $\lambda = 8.15$ est \textbf{faible}, ce qui signifie que les courbes
+de température canadiennes sont relativement lisses par nature et nécessitent
+peu de régularisation. Le minimum GCV n'est pas au bord de la grille, ce qui
+confirme la fiabilité du choix.
+\end{remarque}
+
+\subsection{Résultat}
+
+Le lissage produit un objet \texttt{fd} (functional data) contenant 35 courbes
+$\hat{X}_i(t)$ dans $\Ltwo$, dérivables à tout ordre.
+
+% ============================================================================
+\section{Étape 2 : ACP fonctionnelle (FPCA)}
+\label{sec:fpca}
+
+\subsection{Principe}
+
+L'ACP fonctionnelle diagonalise l'opérateur de covariance :
+\[
+  \int_{\mathcal{T}} C(s,t) \, \varphi_k(s) \, ds = \lambda_k \, \varphi_k(t),
+\]
+où $C(s,t) = \frac{1}{n} \sum_i [X_i(s) - \mu(s)][X_i(t) - \mu(t)]$ est la
+surface de covariance.
+
+\subsection{Choix de $K$}
+
+On retient les $K$ premières composantes telles que la variance cumulée atteigne
+$\geq 95\%$ :
+
+\begin{center}
+\begin{tabular}{crr}
+  \toprule
+  \textbf{PC} & \textbf{Var. expliquée} & \textbf{Var. cumulée} \\
+  \midrule
+  $\varphi_1$ & 88.5\% & 88.5\% \\
+  $\varphi_2$ &  8.5\% & 97.0\% \\
+  $\varphi_3$ &  2.0\% & 99.0\% \\
+  $\varphi_4$ &  0.5\% & 99.5\% \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\begin{center}
+\fbox{$K = 2$ composantes retenues (variance cumulée $= 97.0\%$)}
+\end{center}
+
+\subsection{Interprétation des fonctions propres}
+
+\paragraph{$\varphi_1(t)$ — Mode de niveau (88.5\%).}
+Cette fonction propre est approximativement constante et positive sur tout
+l'intervalle. Elle capture le \textbf{niveau moyen de température} : une station
+avec un score $\xi_{i1}$ élevé est globalement plus chaude.
+
+\paragraph{$\varphi_2(t)$ — Mode de saisonnalité (8.5\%).}
+Cette fonction est positive en hiver et négative en été. Elle capture le
+\textbf{contraste saisonnier} : un score $\xi_{i2}$ élevé correspond à un
+écart hivernal plus marqué (climat continental), tandis qu'un score faible
+indique un climat plus tempéré (maritime/pacifique).
+
+\subsection{Scores}
+
+Chaque station est résumée par un vecteur de 2 scores :
+\[
+  \xi_i = (\xi_{i1}, \xi_{i2}) \in \R^2, \quad
+  \xi_{ik} = \int_1^{365} [\hat{X}_i(t) - \mu(t)] \, \varphi_k(t) \, dt.
+\]
+On passe de 35 courbes dans $\Ltwo$ (dimension infinie) à 35 points dans
+$\R^2$ (dimension finie). Cette réduction est \textbf{optimale} au sens de la
+variance capturée (théorème de Karhunen-Loève).
+
+% ============================================================================
+\section{Étape 3 : Calcul des distances}
+\label{sec:distances}
+
+L'architecture des distances est organisée en \textbf{deux niveaux} :
+
+\begin{figure}[H]
+\centering
+\begin{tabular}{c}
+\fbox{\parbox{0.85\textwidth}{
+\textbf{Niveau 1 — Distance fonctionnelle $\Dp(\alpha)$} \\[0.3em]
+$D_0$ (L² entre courbes, niveau) \\
+$D_1$ (L² entre dérivées, forme) \\
+$\Dp(\alpha) = \sqrt{(1-\alpha) \cdot \tilde{D}_0^2 + \alpha \cdot \tilde{D}_1^2}$ \\[0.5em]
+\textbf{Niveau 2 — Combinaison fonctionnel + vectoriel} \\[0.3em]
+$D_s$ (euclidienne sur $Z$ standardisé) \\
+$\Dw(\alpha, \omega) = \sqrt{\omega \cdot \Dp(\alpha)^2 + (1-\omega) \cdot \tilde{D}_s^2}$ \\
+$\DK(\alpha) = \sqrt{K(i,i) + K(j,j) - 2K(i,j)}$ avec $K_f = \exp(-\Dp(\alpha)^2 / 2\sigma_f^2)$
+}}
+\end{tabular}
+\caption{Architecture à deux niveaux des distances.}
+\label{fig:archi_distances}
+\end{figure}
+
+\subsection{Distance $D_0$ : L² entre courbes}
+
+\begin{definition}[Distance $D_0$]
+\[
+  D_0(i,j) = \sqrt{\int_1^{365} [\hat{X}_i(t) - \hat{X}_j(t)]^2 \, dt}
+\]
+\end{definition}
+
+C'est la norme $L^2$ de la différence. Elle mesure la proximité
+\textbf{globale} des profils. En pratique, l'intégrale est approchée par une
+somme de Riemann sur 1000 points équidistants.
+
+\textbf{Résultat :} $D_0 \in [3.9, \, 532.1]$.
+
+\subsection{Distance $D_1$ : L² entre dérivées}
+
+\begin{definition}[Distance $D_1$]
+\[
+  D_1(i,j) = \sqrt{\int_1^{365} [\hat{X}_i'(t) - \hat{X}_j'(t)]^2 \, dt}
+\]
+\end{definition}
+
+Capture les différences de \textbf{dynamique} (vitesse de changement).
+Deux courbes au même niveau mais dont l'une chute plus vite en automne
+seront proches en $D_0$ mais éloignées en $D_1$.
+
+\textbf{Résultat :} $D_1 \in [0.51, \, 6.61]$.
+
+\begin{remarque}
+Les échelles de $D_0$ et $D_1$ sont très différentes (facteur $\sim 80$).
+C'est pourquoi une \textbf{normalisation} est indispensable avant de les
+combiner.
+\end{remarque}
+
+\subsection{Distance $\Dp(\alpha)$ : combinaison fonctionnelle}
+
+\begin{definition}[Distance $\Dp$]
+Soient $\tilde{D}_0 = D_0 / \max(D_0)$ et $\tilde{D}_1 = D_1 / \max(D_1)$ les
+distances normalisées par leur maximum. Alors :
+\[
+  \Dp(\alpha) = \sqrt{(1-\alpha) \cdot \tilde{D}_0^2 + \alpha \cdot \tilde{D}_1^2},
+  \qquad \alpha \in [0, 1].
+\]
+\end{definition}
+
+Le paramètre $\alpha$ contrôle le \textbf{compromis niveau/forme} :
+\begin{itemize}[nosep]
+  \item $\alpha = 0$ : $\Dp = \tilde{D}_0$ (seul le niveau compte),
+  \item $\alpha = 1$ : $\Dp = \tilde{D}_1$ (seule la forme compte),
+  \item $\alpha \in (0,1)$ : compromis.
+\end{itemize}
+
+\subsection{Distance $D_s$ : euclidienne sur $Z$}
+
+\begin{definition}[Distance $D_s$]
+\[
+  D_s(i,j) = \| Z_i^{\text{std}} - Z_j^{\text{std}} \|_2,
+\]
+où $Z_i^{\text{std}} = (Z_i - \bar{Z}) / \sigma_Z$ est le vecteur standardisé.
+\end{definition}
+
+\textbf{Résultat :} $D_s \in [0.07, \, 5.68]$.
+
+\subsection{Distance $\Dw(\alpha, \omega)$ : mixte pondérée (stratégie B)}
+
+\begin{definition}[Distance $\Dw$]
+Soit $\tilde{D}_s = D_s / \max(D_s)$. Alors :
+\[
+  \Dw(\alpha, \omega) = \sqrt{\omega \cdot \Dp(\alpha)^2 + (1-\omega) \cdot \tilde{D}_s^2},
+  \qquad \alpha, \omega \in [0, 1].
+\]
+\end{definition}
+
+C'est un système à \textbf{deux paramètres} :
+\begin{itemize}[nosep]
+  \item $\alpha$ : mix D0/D1 \textbf{dans} le fonctionnel (niveau vs forme),
+  \item $\omega$ : mix fonctionnel/vectoriel (courbes vs variables Z).
+\end{itemize}
+
+Les paramètres sont choisis par \textbf{grid search} sur
+$\alpha \times \omega \in \{0, 0.1, \ldots, 1\}^2$ (121 combinaisons),
+en maximisant la silhouette.
+
+\subsection{Distance $\DK(\alpha)$ : à noyaux (stratégie C)}
+
+\begin{definition}[Distance $\DK$]
+On définit le noyau produit :
+\begin{align*}
+  K_f(i,j) &= \exp\!\left(-\frac{\Dp(\alpha)_{ij}^2}{2\sigma_f^2}\right), \qquad
+  \sigma_f = \text{médiane}\{\Dp(\alpha)_{ij} : i < j\}, \\
+  K_s(i,j) &= \exp\!\left(-\frac{D_s(i,j)^2}{2\sigma_s^2}\right), \qquad
+  \sigma_s = \text{médiane}\{D_s(i,j) : i < j\}, \\
+  K(i,j) &= K_f(i,j) \cdot K_s(i,j).
+\end{align*}
+La distance associée est :
+\[
+  \DK(i,j) = \sqrt{K(i,i) + K(j,j) - 2K(i,j)}.
+\]
+\end{definition}
+
+Les largeurs de bande $\sigma_f$ et $\sigma_s$ sont fixées par l'heuristique
+de la médiane \cite{jaakkola1999}. Le seul paramètre libre est $\alpha$,
+optimisé par grid search sur $\{0, 0.1, \ldots, 1\}$.
+
+% ============================================================================
+\section{Étape 4 : Clustering}
+\label{sec:clustering}
+
+Trois stratégies sont comparées, plus deux baselines.
+
+\subsection{Stratégie A : FPCA + concaténation + k-means}
+
+On concatène les scores FPCA standardisés et les variables $Z$ standardisées :
+\[
+  W_i = \left(\frac{\xi_{i1}}{\sigma_{\xi_1}}, \frac{\xi_{i2}}{\sigma_{\xi_2}},
+  Z_i^{\text{std}}\right) \in \R^{K+3} = \R^5.
+\]
+On applique \textbf{k-means} avec $k = 4$ clusters et 25 initialisations
+aléatoires (\texttt{nstart = 25}).
+
+\paragraph{Pourquoi k-means ?} k-means minimise la variance intra-cluster et
+opère sur des vecteurs. Il n'utilise pas de matrice de distances : il travaille
+directement dans $\R^5$.
+
+\subsection{Stratégie B : $\Dw(\alpha, \omega)$ + PAM}
+
+On construit $\Dw(\alpha, \omega)$ pour chaque couple $(\alpha, \omega)$ dans
+la grille $\{0, 0.1, \ldots, 1\}^2$, puis on applique \textbf{PAM}
+(Partitioning Around Medoids) avec $k = 4$.
+
+\paragraph{Pourquoi PAM et pas k-means ?}
+k-means n'accepte que des vecteurs de $\R^p$ et utilise la distance euclidienne.
+PAM est l'extension de k-means à des \textbf{matrices de distances arbitraires}.
+Au lieu de calculer des centroïdes (moyennes), PAM sélectionne des
+\textbf{médoïdes} (individus réels du jeu de données) qui minimisent la somme
+des distances aux points de leur cluster.
+
+\paragraph{Grid search 2D.}
+Pour chaque couple $(\alpha, \omega)$, on calcule la silhouette moyenne. Le
+couple optimal est celui qui maximise ce critère. Cela représente
+$11 \times 11 = 121$ exécutions de PAM.
+
+\subsection{Stratégie C : $\DK(\alpha)$ + PAM}
+
+On construit $\DK(\alpha)$ pour chaque $\alpha \in \{0, 0.1, \ldots, 1\}$, puis
+PAM avec $k = 4$. Le $\alpha$ optimal maximise la silhouette.
+
+\subsection{Baselines}
+
+Deux baselines isolent chaque source d'information :
+\begin{itemize}[nosep]
+  \item \textbf{$D_0$ seul} : PAM sur la distance fonctionnelle brute (pas de Z).
+  \item \textbf{$D_s$ seul} : PAM sur la distance vectorielle (pas de courbes).
+\end{itemize}
+
+% ============================================================================
+\section{Métriques d'évaluation}
+\label{sec:eval}
+
+\subsection{Silhouette moyenne}
+
+Pour un individu $i$ assigné au cluster $C_k$ :
+\[
+  s(i) = \frac{b(i) - a(i)}{\max(a(i), b(i))},
+\]
+où $a(i) = $ distance moyenne aux individus du même cluster, et $b(i) = $
+distance moyenne au cluster voisin le plus proche. La silhouette moyenne
+$\bar{s} = \frac{1}{n}\sum_i s(i)$ mesure la qualité \textbf{intrinsèque}
+du clustering :
+\begin{itemize}[nosep]
+  \item $\bar{s} \approx 1$ : clusters très bien séparés,
+  \item $\bar{s} \approx 0$ : frontières floues,
+  \item $\bar{s} < 0$ : individus mal classés.
+\end{itemize}
+
+\subsection{ARI (Adjusted Rand Index)}
+\label{sec:ari}
+
+L'ARI compare la partition trouvée $\hat{C}$ à la vérité terrain $C^*$
+(les 4 régions). C'est une version corrigée pour le hasard de l'indice de Rand :
+\[
+  \text{ARI} = \frac{\text{Rand} - \E[\text{Rand}]}{\max(\text{Rand}) - \E[\text{Rand}]}.
+\]
+\begin{itemize}[nosep]
+  \item $\text{ARI} = 1$ : accord parfait avec la vérité terrain,
+  \item $\text{ARI} = 0$ : accord équivalent au hasard,
+  \item $\text{ARI} < 0$ : pire que le hasard.
+\end{itemize}
+
+\begin{remarque}
+L'ARI est utilisé \textbf{a posteriori} pour mesurer à quel point le clustering
+non supervisé retrouve les régions connues. Il ne guide \textbf{pas} le
+clustering : c'est la silhouette qui sert de critère de sélection des
+paramètres $(\alpha, \omega)$. Cette distinction est fondamentale : le
+clustering reste non supervisé.
+\end{remarque}
+
+\newpage
+% ============================================================================
+% ============================================================================
+\part{Résultats}
+% ============================================================================
+% ============================================================================
+
+\section{Tableau comparatif}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{llcc}
+  \toprule
+  & \textbf{Stratégie} & \textbf{Silhouette} & \textbf{ARI} \\
+  \midrule
+  \multirow{2}{*}{\textit{Baselines}}
+  & $D_0$ seul (fonctionnel pur)  & 0.285 & 0.229 \\
+  & $D_s$ seul (vectoriel pur)    & 0.448 & 0.616 \\
+  \midrule
+  & A : FPCA + Z $\to$ k-means   & 0.395 & \textbf{0.748} \\
+  & B : $\Dw(\alpha\!=\!0, \omega\!=\!0)$ $\to$ PAM & \textbf{0.448} & 0.616 \\
+  & C : $\DK(\alpha\!=\!0)$ $\to$ PAM & 0.329 & 0.686 \\
+  \bottomrule
+\end{tabular}
+\caption{Résultats de clustering sur Canadian Weather ($k = 4$, seed = 42).}
+\label{tab:resultats}
+\end{table}
+
+\section{Analyse de chaque stratégie}
+
+\subsection{Stratégie A : meilleur ARI (0.748)}
+
+La stratégie A obtient le meilleur ARI. Le k-means dans l'espace
+$\R^5 = \R^{K+3}$ parvient à exploiter conjointement les scores FPCA
+(résumé des courbes) et les variables géographiques. La silhouette est
+correcte (0.395) mais inférieure à celle de $D_s$ seul.
+
+\paragraph{Pourquoi ?} K-means minimise la variance intra-cluster en utilisant
+la distance euclidienne dans l'espace concaténé. Les coordonnées
+géographiques (surtout la latitude) et les scores FPCA (surtout $\xi_1$,
+le niveau moyen) sont des proxies complémentaires de la région climatique.
+Le k-means parvient à trouver un compromis géométrique efficace.
+
+\subsection{Stratégie B : retombe sur $D_s$ seul ($\omega = 0$)}
+
+Le grid search 2D sur $(\alpha, \omega)$ identifie l'optimum en
+$\alpha = 0, \omega = 0$, ce qui signifie :
+\begin{itemize}[nosep]
+  \item $\omega = 0$ : le fonctionnel est ignoré $\Rightarrow$ $\Dw = \tilde{D}_s$,
+  \item $\alpha = 0$ : $D_1$ est ignoré $\Rightarrow$ $\Dp = \tilde{D}_0$ (sans importance puisque $\omega = 0$).
+\end{itemize}
+
+\paragraph{Conclusion.} La stratégie B est identique au baseline $D_s$ seul.
+La composante fonctionnelle n'apporte rien \textbf{dans ce cadre spécifique}.
+
+\subsection{Stratégie C : ARI intermédiaire (0.686)}
+
+Le noyau produit $K = K_f \cdot K_s$ combine fonctionnel et vectoriel sans
+paramètre $\omega$. Le choix de $\alpha = 0$ signifie que le noyau fonctionnel
+utilise $D_0$ (courbes brutes).
+
+L'ARI (0.686) est supérieur à $D_s$ seul (0.616), ce qui montre que le noyau
+parvient à \textbf{intégrer} les deux sources d'information de manière
+non triviale, même quand $D_s$ domine.
+
+% ============================================================================
+\section{Diagnostic : pourquoi les variables vectorielles écrasent le fonctionnel}
+\label{sec:critique}
+
+Le résultat central de cette étude est que \textbf{les variables vectorielles
+$Z$ écrasent la composante fonctionnelle}. Ce n'est pas un défaut de la
+méthode — c'est une propriété du jeu de données Canadian Weather. Nous le
+prouvons ici par cinq arguments quantitatifs indépendants.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\subsection{Argument 1 : corrélation écrasante latitude–température}
+
+La température moyenne annuelle de chaque station, $\bar{T}_i = \frac{1}{365}
+\sum_j Y_{ij}$, est un résumé scalaire de la courbe~$X_i(t)$. Sa corrélation
+avec les variables vectorielles est :
+
+\begin{center}
+\begin{tabular}{lc}
+  \toprule
+  \textbf{Variable $Z$} & $\boldsymbol{r}$ \textbf{(Pearson)} \\
+  \midrule
+  Latitude      & $-0.884$ \\
+  Longitude     & $-0.145$ \\
+  Précipitations & $+0.577$ \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+La corrélation latitude–température de $r = -0.884$ signifie que \textbf{78\%
+de la variance} ($r^2 = 0.78$) de la température moyenne est expliquée par la
+latitude seule. Autrement dit, le \textbf{contenu informatif principal} des
+courbes (le niveau moyen) est déjà capturé par une seule variable scalaire.
+Les courbes sont donc largement \textbf{redondantes} avec $Z$.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\subsection{Argument 2 : ANOVA — les variables $Z$ séparent les régions}
+
+On mesure, pour chaque variable vectorielle, la fraction de variance expliquée
+par les 4 régions ($\eta^2$, le rapport entre variance inter-groupes et
+variance totale) via une ANOVA à un facteur :
+
+\begin{center}
+\begin{tabular}{lcrc}
+  \toprule
+  \textbf{Variable} & $\boldsymbol{F}$ & $\boldsymbol{p}$ & $\boldsymbol{\eta^2}$ \\
+  \midrule
+  Latitude      & 29.7 & $3.1 \times 10^{-9}$ & 0.742 \\
+  Longitude     & 30.0 & $2.7 \times 10^{-9}$ & 0.744 \\
+  Précipitations & 10.9 & $4.6 \times 10^{-5}$ & 0.514 \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+L'$\eta^2$ de la latitude est de \textbf{0.742} : les 4 régions expliquent
+74\% de la variance de la latitude. Pour la longitude, c'est \textbf{0.744}.
+Ces deux variables combinées suffisent presque parfaitement à identifier la
+région. Concrètement :
+\begin{itemize}[nosep]
+  \item Arctic = nord ($\text{lat} > 60°$N),
+  \item Continental = centre (latitude moyenne, longitude intérieure),
+  \item Atlantic = est (longitude faible, côte atlantique),
+  \item Pacific = ouest (longitude élevée, côte pacifique).
+\end{itemize}
+
+\textbf{Conclusion :} les variables $Z$ sont quasi-suffisantes pour retrouver
+les régions. Toute distance basée sur $D_s$ partira donc avec un avantage
+structurel écrasant.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\subsection{Argument 3 : rapport signal/bruit — $D_s$ sépare mieux que $D_0$}
+
+On partage les $\binom{35}{2} = 595$ paires de stations en
+\textbf{paires intra-cluster} (même région) et \textbf{paires inter-cluster}
+(régions différentes). Pour une distance discriminante, on veut que les
+distances inter soient nettement plus grandes que les distances intra. On
+mesure le \textbf{ratio inter/intra} :
+
+\begin{center}
+\begin{tabular}{lccc}
+  \toprule
+  \textbf{Distance} & $\overline{d}_{\text{intra}}$ & $\overline{d}_{\text{inter}}$ & \textbf{Ratio} \\
+  \midrule
+  $D_0$ (fonctionnel) & 88.8  & 185.2 & 2.09 \\
+  $D_s$ (vectoriel)   & 1.07  & 2.63  & 2.46 \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+$D_s$ a un ratio inter/intra de 2.46, contre 2.09 pour $D_0$. Cela signifie
+que \textbf{$D_s$ sépare 18\% mieux les régions que $D_0$}. L'écart peut
+sembler modeste, mais il est suffisant pour que la silhouette
+(qui compare $a(i)$ et $b(i)$, cf.~section~\ref{sec:eval}) privilégie
+systématiquement $D_s$.
+
+\paragraph{Interprétation.} Une distance intra-cluster élevée pour $D_0$
+signifie que deux stations de la même région ont des courbes
+\textbf{assez différentes} (ex.~: Montréal et Halifax, toutes deux Atlantic,
+ont des hivers d'intensité différente). En revanche, leur $D_s$ est faible
+car elles ont des latitudes et longitudes proches. Le fonctionnel ajoute donc
+de la \textbf{dispersion intra-cluster}, ce qui dégrade la silhouette.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\subsection{Argument 4 : chevauchement des distributions}
+
+On mesure le \textbf{chevauchement} entre les distributions de distances intra
+et inter-cluster. On calcule le pourcentage de paires inter-cluster dont la
+distance est inférieure à la médiane des distances intra-cluster (i.e.
+des paires de régions différentes qui sont plus proches que la moitié des
+paires de la même région) :
+
+\begin{center}
+\begin{tabular}{lc}
+  \toprule
+  \textbf{Distance} & \textbf{Chevauchement} \\
+  \midrule
+  $D_0$ (fonctionnel) & 12\% \\
+  $D_s$ (vectoriel)   & 3\%  \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+Avec $D_0$, \textbf{12\% des paires inter-cluster sont confondues avec des
+paires intra-cluster}. Avec $D_s$, ce chiffre tombe à 3\%. Cela confirme que
+$D_s$ produit des clusters mieux séparés : les erreurs de frontière sont 4
+fois plus rares.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\subsection{Argument 5 : redondance FPCA–latitude}
+
+Le dernier argument est peut-être le plus révélateur. On calcule les
+corrélations entre les scores FPCA et les variables vectorielles :
+
+\begin{center}
+\begin{tabular}{lcc}
+  \toprule
+  & \textbf{Latitude} & \textbf{Longitude} \\
+  \midrule
+  $\xi_1$ (PC1, 88.5\%) & $-0.861$ & $-0.140$ \\
+  $\xi_2$ (PC2, 8.5\%)  & $-0.184$ & $+0.100$ \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+La corrélation $\text{cor}(\xi_1, \text{latitude}) = -0.861$ est accablante.
+Elle signifie que \textbf{le premier score FPCA est essentiellement la latitude
+sous un autre nom}. La FPCA extrait le niveau moyen de température comme
+premier mode de variation — et la latitude détermine ce niveau moyen.
+
+\textbf{Conséquence pour la stratégie A.} Quand on concatène
+$(\xi_1, \xi_2, \text{lat}, \text{lon}, \text{precip})$ dans $\R^5$, la
+latitude apparaît \textbf{deux fois} : une fois comme $\xi_1$ et une fois
+directement. Le k-means profite de ce doublement pour donner plus de poids
+au niveau moyen. C'est pourquoi la stratégie A obtient le meilleur ARI
+— non pas parce qu'elle combine deux sources complémentaires, mais parce
+qu'elle \textbf{double implicitement} l'information géographique.
+
+\textbf{Conséquence pour la stratégie B.} Quand on construit
+$\Dw = \sqrt{\omega \cdot \Dp^2 + (1-\omega) \cdot \tilde{D}_s^2}$, ajouter
+$\Dp$ (qui est essentiellement $D_0$, elle-même déterminée par $\xi_1$,
+elle-même déterminée par la latitude) n'apporte \textbf{aucune information
+nouvelle} par rapport à $D_s$, tout en ajoutant du bruit intra-cluster.
+Le grid search conclut rationnellement : $\omega = 0$.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\subsection{Synthèse du diagnostic}
+
+\begin{center}
+\fbox{\parbox{0.9\textwidth}{
+\textbf{Sur Canadian Weather, les courbes de température sont une conséquence
+de la géographie.} La latitude détermine le niveau moyen (= PC1 = 88.5\% de
+la variance fonctionnelle), et la longitude distingue les côtes. Toute
+l'information exploitable est déjà dans $Z = (\text{lat}, \text{lon},
+\text{precip})$. Les courbes n'apportent pas d'information
+\textbf{complémentaire} — elles répètent, en moins propre, ce que $Z$ dit
+déjà.
+}}
+\end{center}
+
+\subsection{Conséquence : nécessité d'un autre jeu de données}
+
+Ce diagnostic n'invalide pas le pipeline à deux paramètres $(\alpha, \omega)$.
+Il montre que \textbf{Canadian Weather n'est pas le bon terrain d'évaluation}
+pour une méthode de combinaison fonctionnel–vectoriel. Pour que le grid search
+trouve des valeurs $\alpha, \omega \in (0, 1)$ (pas aux coins), il faut un jeu
+de données satisfaisant trois conditions :
+\begin{enumerate}
+  \item Les courbes portent une information \textbf{non redondante} avec $Z$ :
+    la corrélation entre les scores FPCA et les variables vectorielles doit être
+    faible.
+  \item Les dérivées ($D_1$) ont un pouvoir discriminant propre : les
+    \textbf{formes} des courbes (pas seulement les niveaux) diffèrent entre
+    clusters.
+  \item Les variables vectorielles \textbf{ne suffisent pas} seules : $D_s$
+    seul produit un ARI modeste, de sorte que le fonctionnel peut apporter
+    un gain mesurable.
+\end{enumerate}
+
+C'est ce type de jeu de données que nous cherchons pour la prochaine étape du
+travail.
+
+% ============================================================================
+\section{Figures produites}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lll}
+  \toprule
+  \textbf{Figure} & \textbf{Fichier} & \textbf{Contenu} \\
+  \midrule
+  Fig.~1 & \texttt{fig01\_gcv.png}             & Courbe GCV, choix de $\lambda$ \\
+  Fig.~2 & \texttt{fig02\_courbes\_regions.png} & 35 courbes colorées par région \\
+  Fig.~3 & \texttt{fig03\_fonctions\_propres.png} & $\varphi_1, \varphi_2$ \\
+  Fig.~4 & \texttt{fig04\_scores\_fpca.png}     & Scores $\xi_1$ vs $\xi_2$ \\
+  Fig.~5 & \texttt{fig05\_gridsearch\_2D.png}   & Heatmap $(\alpha, \omega)$ \\
+  Fig.~5b& \texttt{fig05b\_DK\_alpha.png}       & Grid search $\alpha$ pour $\DK$ \\
+  Fig.~6 & \texttt{fig06\_comparaison.png}      & Barplot comparatif \\
+  Fig.~7 & \texttt{fig07\_courbes\_par\_cluster.png} & Courbes par cluster \\
+  \bottomrule
+\end{tabular}
+\caption{Liste des figures générées.}
+\end{table}
+
+\newpage
+% ============================================================================
+% ============================================================================
+\part{Conclusions et perspectives}
+% ============================================================================
+% ============================================================================
+
+\section{Bilan de l'étude Canadian Weather}
+
+\begin{enumerate}
+  \item Le \textbf{pipeline complet} est opérationnel : du lissage au
+    clustering, en passant par la FPCA et 6 distances différentes.
+
+  \item Le système à \textbf{deux paramètres} $(\alpha, \omega)$ fonctionne
+    correctement. Il permet d'explorer un espace de distances plus riche
+    que le simple $\omega$ initial.
+
+  \item Sur Canadian Weather, la meilleure stratégie est \textbf{A (FPCA + Z
+    $\to$ k-means)} avec un ARI de 0.748. Les stratégies B et C ne parviennent
+    pas à tirer profit de la composante fonctionnelle au-delà de ce que $Z$
+    apporte seul.
+
+  \item Ce résultat n'est \textbf{pas un échec méthodologique} : il reflète une
+    propriété du jeu de données. Les variables géographiques (latitude,
+    longitude) sont des prédicteurs quasi-parfaits du climat canadien. Les
+    courbes de température sont une \textbf{conséquence} de la géographie,
+    pas une information complémentaire.
+\end{enumerate}
+
+\section{Nécessité d'un nouveau jeu de données}
+\label{sec:nouveau_dataset}
+
+Pour valider l'intérêt du système $(\alpha, \omega)$, il faut un jeu de données
+où :
+
+\begin{itemize}
+  \item La composante fonctionnelle porte une information \textbf{non
+    redondante} avec les variables vectorielles.
+  \item Les dérivées ($D_1$) contribuent à la discrimination (les formes
+    importent, pas seulement les niveaux).
+  \item Les variables vectorielles \textbf{ne suffisent pas} à elles seules
+    pour un bon clustering.
+\end{itemize}
+
+Un tel jeu de données permettrait de vérifier que le grid search 2D trouve des
+valeurs optimales $\alpha, \omega \in (0, 1)$ (pas aux coins), prouvant ainsi
+l'utilité de la combinaison.
+
+\section{Reproductibilité}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{ll}
+  \toprule
+  \textbf{Paramètre} & \textbf{Valeur} \\
+  \midrule
+  Seed       & 42 \\
+  R version  & $\geq 4.0$ \\
+  Packages   & \texttt{fda}, \texttt{cluster}, \texttt{mclust} \\
+  nbasis     & 65 \\
+  norder     & 4 (B-splines cubiques) \\
+  $\lambda$  & 8.15 (GCV) \\
+  $K$        & 2 (seuil 95\%) \\
+  $k$        & 4 clusters \\
+  Grille $\alpha$ & $\{0, 0.1, \ldots, 1\}$ \\
+  Grille $\omega$ & $\{0, 0.1, \ldots, 1\}$ \\
+  \bottomrule
+\end{tabular}
+\caption{Tous les paramètres du pipeline.}
+\end{table}
+
+\bigskip
+
+L'intégralité du code source est dans \texttt{src/}. Pour reproduire les résultats :
+\begin{lstlisting}
+Rscript src/main.R
+\end{lstlisting}
+
+% ============================================================================
+\begin{thebibliography}{9}
+
+\bibitem{ramsay2005}
+  J.O.~Ramsay et B.W.~Silverman,
+  \textit{Functional Data Analysis}, 2\textsuperscript{e} édition,
+  Springer, 2005.
+
+\bibitem{jaakkola1999}
+  T.~Jaakkola et D.~Haussler,
+  \textit{Exploiting Generative Models in Discriminative Classifiers},
+  NIPS, 1999.
+
+\bibitem{ferreira2014}
+  L.~Ferreira et B.~de Carvalho,
+  \textit{Kernel-based Clustering of Functional Data},
+  2014.
+
+\end{thebibliography}
+
+\end{document}
