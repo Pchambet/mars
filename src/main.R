@@ -1,32 +1,48 @@
 # ============================================================================
 # Pipeline principal — Classification non-supervisée de données mixtes
-# Stage : Application en océanographie
-# Auteur : Pierre
-# Date : Mars 2026
 # ============================================================================
 #
-# Ce script exécute l'ensemble du pipeline :
-#   1. Pré-traitement des données
-#   2. Lissage (B-splines pénalisées)
-#   3. ACP fonctionnelle
-#   4. Distances (D0, D1, Dω, DK)
-#   5. Clustering (PAM) et évaluation
-#   6. Visualisation
+# Datasets disponibles :
+#   "canadian"  → Canadian Weather (35 stations, 365 jours, 4 régions)
+#   "tecator"   → Tecator (215 spectres NIR, 100 λ, 3 classes de gras)
+#   "aemet"     → AEMET (73 stations espagnoles, 365 jours, 4 zones)
+#   "growth"    → Growth (93 enfants, 31 âges, 2 classes M/F)
 #
-# Usage : source("src/main.R")
+# Usage :
+#   DATASET <- "tecator"   # choisir ici
+#   source("src/main.R")
+#
+# Pipeline :
+#   00. Préparation   → Y_brut (fonctionnel) + Z (vectoriel) + régions (vérité)
+#   01. Lissage       → X̂_i(t) dans L²  (B-splines + GCV)
+#   02. FPCA          → scores ξ_ik      (choix K par variance cumulée)
+#   03. Distances     → D0, D1, Dp, Ds, Dw, DK
+#   04. Clustering    → Stratégies A, B, C + baselines → ARI + silhouette
+#   05. Visualisation → figures dans figures/<dataset>/
+#
 # ============================================================================
 
-cat("=== Pipeline FDA — Données mixtes ===\n\n")
+# --- Choix du dataset (modifiable avant source) ---
+if (!exists("DATASET")) DATASET <- "canadian"
 
-# --- Reproductibilité ---
+cat(sprintf("=== Pipeline FDA — Données mixtes (%s) ===\n\n", DATASET))
+
+# Reproductibilité
 set.seed(42)
 
-# --- Chargement des scripts ---
-# source("src/00_preprocess.R")
-# source("src/01_lissage.R")
-# source("src/02_fpca.R")
-# source("src/03_distances.R")
-# source("src/04_clustering.R")
-# source("src/05_visualisation.R")
+# --- Chargement des données (étape 00 spécifique au dataset) ---
+preprocess_file <- switch(DATASET,
+  "canadian" = "src/00_preprocess.R",
+  "tecator"  = "src/00_preprocess_tecator.R",
+  "aemet"    = "src/00_preprocess_aemet.R",
+  "growth"   = "src/00_preprocess_growth.R",
+  stop(sprintf("Dataset inconnu : '%s'. Choix : canadian, tecator, aemet, growth", DATASET))
+)
+source(preprocess_file)
 
-cat("\n=== Pipeline terminé ===\n")
+# --- Pipeline générique (étapes 01-05) ---
+source("src/01_lissage.R")
+source("src/02_fpca.R")
+source("src/03_distances.R")
+source("src/04_clustering.R")
+source("src/05_visualisation.R")
