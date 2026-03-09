@@ -44,7 +44,6 @@ noms_stations <- rownames(Z)
 # --- 5. Métadonnées pour le pipeline générique ---
 dataset_name <- "tecator"
 rangeval <- range(t_jours)  # c(850, 1050)
-nbasis_choix <- 30          # 100 points → 30 bases suffisent
 xlab_courbe <- "Longueur d'onde (nm)"
 ylab_courbe <- "Absorbance"
 

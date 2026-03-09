@@ -45,7 +45,6 @@ noms_stations <- CanadianWeather$place
 # --- 5. Métadonnées pour le pipeline générique ---
 dataset_name <- "canadian_weather"
 rangeval <- c(1, 365)
-nbasis_choix <- 65
 xlab_courbe <- "Jour de l'année"
 ylab_courbe <- "Température (°C)"
 

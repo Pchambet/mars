@@ -16,7 +16,7 @@
 #
 # ÉVALUATION :
 #   - Silhouette moyenne (qualité intrinsèque des clusters)
-#   - ARI (Adjusted Rand Index) vs les 4 régions (vérité terrain)
+#   - ARI (Adjusted Rand Index) vs vérité terrain
 #
 # ============================================================================
 
@@ -27,7 +27,7 @@ cat("\n--- Étape 04 : Clustering (3 stratégies) ---\n")
 
 if (!exists("compute_DK")) source("src/03_distances.R")
 
-# Nombre de clusters = 4 (les 4 régions climatiques)
+# Nombre de clusters = nombre de classes (vérité terrain)
 n_clusters <- length(levels(regions))
 labels_vrai <- as.integer(regions)
 
@@ -74,10 +74,17 @@ for (idx in 1:nrow(grille_B)) {
   grille_B$ari[idx] <- adjustedRandIndex(pam_temp$clustering, labels_vrai)
 }
 
-# Meilleur couple (α, ω)
+# Meilleur couple (α, ω) — par silhouette (sélection par défaut)
 idx_best_B <- which.max(grille_B$silhouette)
 alpha_best_B <- grille_B$alpha[idx_best_B]
 omega_best_B <- grille_B$omega[idx_best_B]
+
+# ARI-optimal (pour analyse post-hoc, reproductibilité du rapport)
+idx_ari_B <- which.max(grille_B$ari)
+alpha_ari_B <- grille_B$alpha[idx_ari_B]
+omega_ari_B <- grille_B$omega[idx_ari_B]
+cat(sprintf("    [ARI-optimal] α = %.1f, ω = %.1f → ARI = %.3f\n",
+            alpha_ari_B, omega_ari_B, grille_B$ari[idx_ari_B]))
 
 Dp_best <- compute_Dp(D0_norm, D1_norm, alpha = alpha_best_B)
 Dw_best <- compute_Dw(Dp_best, Ds_norm, omega = omega_best_B)

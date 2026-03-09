@@ -47,7 +47,6 @@ noms_stations <- noms
 # --- 5. Métadonnées pour le pipeline générique ---
 dataset_name <- "growth"
 rangeval <- range(t_jours)  # c(1, 18)
-nbasis_choix <- 15          # 31 points → 15 bases est raisonnable
 xlab_courbe <- "Âge (années)"
 ylab_courbe <- "Taille (cm)"
 

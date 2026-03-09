@@ -54,7 +54,6 @@ noms_stations <- aemet$df$name
 # --- 5. Métadonnées pour le pipeline générique ---
 dataset_name <- "aemet"
 rangeval <- range(t_jours)
-nbasis_choix <- 65
 xlab_courbe <- "Jour de l'année"
 ylab_courbe <- "Température (°C)"
 

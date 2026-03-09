@@ -85,8 +85,8 @@ non supervisée de données mixtes (fonctionnelles + vectorielles). On y
 présente le problème, l'architecture des distances construite à deux niveaux,
 les résultats obtenus sur quatre jeux de données labellisés, et les
 conclusions méthodologiques qui en découlent — notamment la découverte que
-les dérivées sont systématiquement informatives ($\alpha > 0.6$ optimal sur
-4/4 datasets) et l'identification du critère de sélection des paramètres
+les dérivées sont systématiquement informatives lorsqu'on optimise par ARI
+($\alpha_{\text{ARI-optimal}} \geq 0.6$ sur 4/4 datasets) et l'identification du critère de sélection des paramètres
 comme verrou principal.
 \end{abstract}
 
@@ -241,8 +241,9 @@ Aucune des trois ne capture toute l'information $\Rightarrow$ il faut les
 
 $D_0$ et $D_1$ sont sur des échelles très différentes. Sur Canadian Weather :
 \[
-  D_0 \in [3.9,\; 532] \qquad D_1 \in [0.51,\; 6.6] \qquad \text{(facteur $\times 80$)}.
+  D_0 \in [3.9,\; 532] \qquad D_1 \in [0.51,\; 6.6] \qquad \text{(facteur $\times 80$)},
 \]
+où le minimum de $D_0$ exclut la diagonale (distance à soi-même nulle).
 
 Si on les additionne brut, $D_1$ ne pèse rien. \textbf{Solution :}
 normaliser par le maximum :
@@ -461,32 +462,45 @@ contre la vérité terrain).
 
 \begin{table}[H]
 \centering
-\renewcommand{\arraystretch}{1.4}
-\begin{tabular}{l cc | cc | cc}
+\resizebox{\textwidth}{!}{%
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{l l cc cc cc cc cc}
   \toprule
-  & \multicolumn{2}{c|}{\textbf{Baselines}} & \multicolumn{2}{c|}{\textbf{Silhouette choisit}} & \multicolumn{2}{c}{\textbf{ARI-optimal}} \\
-  \textbf{Dataset} & $D_0$ seul & $D_s$ seul & $(\alpha, \omega)$ & ARI & $(\alpha, \omega)$ & ARI \\
+  & & \multicolumn{2}{c}{\textbf{Baseline $D_0$}} & \multicolumn{2}{c}{\textbf{Baseline $D_s$}}
+    & \multicolumn{2}{c}{\textbf{A (FPCA+Z)}} & \multicolumn{2}{c}{\textbf{B ($\Dw$)}} & \multicolumn{2}{c}{\textbf{C ($\DK$)}} \\
+  \cmidrule(lr){3-4}\cmidrule(lr){5-6}\cmidrule(lr){7-8}\cmidrule(lr){9-10}\cmidrule(lr){11-12}
+  \textbf{Dataset} & $n$ / $k$ & Sil. & ARI & Sil. & ARI & Sil. & ARI & Sil. & ARI & Sil. & ARI \\
   \midrule
-  Canadian Weather & 0.23 & 0.62 & (0,\, 0) & 0.62 & (0.6,\, 0.8) & \cellcolor{resultbox}\textbf{0.90} \\
-  Growth           & 0.12 & 0.42 & (0,\, 0) & 0.42 & (0.9,\, 0.3) & \cellcolor{resultbox}\textbf{0.79} \\
-  AEMET            & 0.17 & 0.33 & (0,\, 1) & 0.17 & (0.9,\, 0.2) & \cellcolor{resultbox}\textbf{0.43} \\
-  Tecator          & 0.15 & 0.55 & (0,\, 1) & 0.15 & (1.0,\, 1.0) & \cellcolor{resultbox}\textbf{0.63} \\
+  Canadian Weather & 35 / 4 & 0.285 & 0.229 & 0.448 & 0.616 & 0.395 & \textbf{0.748} & 0.448 & 0.616 & 0.329 & 0.686 \\
+  Growth           & 93 / 2 & 0.402 & 0.115 & 0.554 & 0.424 & 0.360 & \textbf{0.682} & 0.554 & 0.424 & 0.261 & 0.368 \\
+  AEMET            & 73 / 4 & 0.464 & 0.167 & 0.423 & 0.325 & \textbf{0.445} & \textbf{0.367} & 0.464 & 0.167 & 0.365 & 0.316 \\
+  Tecator          & 215 / 3 & 0.509 & 0.151 & 0.476 & 0.546 & 0.403 & \textbf{0.439} & 0.509 & 0.151 & 0.266 & 0.371 \\
   \bottomrule
-\end{tabular}
-\caption{Résultats comparatifs. La colonne ``Silhouette choisit'' donne le
-couple $(\alpha, \omega)$ sélectionné par la silhouette (critère non
-supervisé). ``ARI-optimal'' donne le couple qui maximise réellement l'ARI
-(connu a posteriori). Le gain est systématique et massif.}
+\end{tabular}%
+}
+
+\caption{Résultats complets sur les 4 datasets (seed = 42).
+Pour la stratégie B, le couple $(\alpha, \omega)$ est sélectionné par silhouette (critère non supervisé).
+Les valeurs \textbf{en gras} indiquent le meilleur ARI parmi les 5 approches pour chaque dataset.
+La stratégie A obtient le meilleur ARI sur 3 datasets sur 4 ; la silhouette de B retombe
+systématiquement sur les baselines ($\omega \in \{0, 1\}$).}
 \label{tab:resultats}
 \end{table}
 
-\subsection{Trois observations majeures}
+\subsection{Observations majeures}
 
 \paragraph{1. $D_0$ seul est toujours insuffisant.}
-Le niveau des courbes ne suffit jamais à retrouver les classes (ARI entre
-0.12 et 0.23). Même $D_s$ seul fait mieux sur 3 datasets sur 4.
+L'ARI de $D_0$ varie entre 0.115 (Growth) et 0.464 (AEMET), mais est
+systématiquement inférieur à au moins une autre approche sur chaque dataset.
+Le niveau des courbes seul ne discrimine pas les classes.
 
-\paragraph{2. $\alpha$ optimal est toujours $\geq 0.6$.}
+\paragraph{2. La stratégie A est la meilleure sur 3 datasets sur 4.}
+La concaténation FPCA + $Z$ avec k-means obtient le meilleur ARI sur
+Canadian (0.748), Growth (0.682) et Tecator (0.439). Sur AEMET, la stratégie
+A est également la meilleure approche parmi les cinq (ARI = 0.367 contre
+0.325 pour $D_s$ seul).
+
+\paragraph{3. $\alpha$ optimal est toujours $\geq 0.6$ (ARI-optimal).}
 
 \begin{figure}[H]
 \centering
@@ -511,11 +525,11 @@ Le niveau des courbes ne suffit jamais à retrouver les classes (ARI entre
 Les dérivées ($D_1$) sont \textbf{systématiquement informatives}.}
 \end{figure}
 
-\paragraph{3. La silhouette tombe sur les coins, l'optimum est à l'intérieur.}
-La silhouette sélectionne systématiquement $\omega = 0$ ou $\omega = 1$,
-c'est-à-dire une source unique. L'ARI-optimal est à l'intérieur de la grille
-sur 3 datasets sur 4. L'architecture des distances \emph{fonctionne} — c'est
-le \textbf{critère de sélection} qui est faible.
+\paragraph{4. La silhouette de B retombe sur les baselines sur 4/4 datasets.}
+La silhouette sélectionne $\omega \in \{0, 1\}$ sur les quatre datasets :
+soit $D_s$ seul (Canadian, Growth), soit $D_0$ seul (AEMET, Tecator avec
+$\omega = 1$). L'architecture $\Dw$ fonctionne — c'est le \textbf{critère de
+sélection} $\alpha, \omega$ qui est le verrou.
 
 % ============================================================================
 \newpage
@@ -553,8 +567,9 @@ récompense les clusters ronds et bien séparés.
   \bottomrule
 \end{tabular}
 \caption{Canadian Weather : la silhouette préfère des clusters \emph{ronds}
-à des clusters \emph{justes}. Le détail de la table de confusion montre
-que le couple ARI-optimal classe correctement 34 stations sur 35.}
+à des clusters \emph{justes}. L'ARI $= 0.898$ est obtenu en maximisant l'ARI
+sur la grille $(\alpha, \omega)$ — et non par sélection silhouette. Le couple
+ARI-optimal classe correctement 34 stations sur 35.}
 \end{table}
 
 \begin{keybox}[Le paradoxe résumé]
@@ -693,14 +708,14 @@ Pour chaque triplet $(k, \alpha, \omega)$, on calcule $M$ critères
 de validation interne :
 \begin{itemize}[nosep]
   \item \textbf{Silhouette} : compacité et séparation géométrique.
-  \item \textbf{Gap statistic} (Tibshirani et al., 2001) : écart d'inertie
+  \item \textbf{Gap statistic} \cite{tibshirani2001} : écart d'inertie
     par rapport à une référence uniforme.
-  \item \textbf{Prediction strength} (Tibshirani \& Walther, 2005) :
+  \item \textbf{Prediction strength} \cite{tibshirani2005} :
     reproductibilité par validation croisée.
   \item \textbf{Stabilité} (bootstrap, cf.\ section précédente).
-  \item \textbf{Indice de Calinski-Harabasz} : rapport variance
+  \item \textbf{Indice de Calinski-Harabasz} \cite{calinski1974} : rapport variance
     inter/intra.
-  \item \textbf{Indice de Davies-Bouldin} : ratio de dispersion intra par
+  \item \textbf{Indice de Davies-Bouldin} \cite{davies1979} : ratio de dispersion intra par
     rapport à la séparation inter.
 \end{itemize}
 
@@ -776,5 +791,30 @@ clusters~$k$, (2)~sélectionner $(\alpha, \omega)$ sans vérité terrain, et
 Les pistes de recherche présentées ci-dessus (stabilité, vote entre
 critères, optimisation bayésienne, méta-calibration) visent précisément
 à résoudre ce verrou.
+
+% ============================================================================
+\begin{thebibliography}{9}
+
+\bibitem{tibshirani2001}
+  R.~Tibshirani, G.~Walther et T.~Hastie,
+  \textit{Estimating the number of clusters in a data set via the gap statistic},
+  Journal of the Royal Statistical Society B, 63(2):411--423, 2001.
+
+\bibitem{tibshirani2005}
+  R.~Tibshirani et G.~Walther,
+  \textit{Cluster validation by prediction strength},
+  Journal of Computational and Graphical Statistics, 14(3):511--528, 2005.
+
+\bibitem{calinski1974}
+  T.~Calinski et J.~Harabasz,
+  \textit{A dendrite method for cluster analysis},
+  Communications in Statistics, 3(1):1--27, 1974.
+
+\bibitem{davies1979}
+  D.L.~Davies et D.W.~Bouldin,
+  \textit{A cluster separation measure},
+  IEEE Transactions on Pattern Analysis and Machine Intelligence, 1(2):224--227, 1979.
+
+\end{thebibliography}
 
 \end{document}

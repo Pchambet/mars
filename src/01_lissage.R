@@ -18,20 +18,30 @@ library(fda)
 
 cat("\n--- Étape 01 : Lissage B-splines pénalisées ---\n")
 
-if (!exists("Y_brut")) source("src/00_preprocess.R")
+if (!exists("Y_brut")) {
+  if (!exists("DATASET")) DATASET <- "canadian"
+  preprocess_file <- switch(DATASET,
+    "canadian" = "src/00_preprocess.R",
+    "tecator"  = "src/00_preprocess_tecator.R",
+    "aemet"    = "src/00_preprocess_aemet.R",
+    "growth"   = "src/00_preprocess_growth.R",
+    "src/00_preprocess.R"
+  )
+  source(preprocess_file)
+}
 
 # ─── 1. Définition de la base B-spline ───
-# On prend nbasis proportionnel au nombre de points, volontairement "trop" :
-# la base a la CAPACITÉ de faire des zigzags, mais λ va l'en empêcher.
+# Formule équitable pour tous les datasets : nbasis = min(65, max(15, N %/% 3))
+# La base a la CAPACITÉ de faire des zigzags, mais λ (GCV) contrôle la régularité.
 if (!exists("rangeval")) rangeval <- c(1, N)
-if (!exists("nbasis_choix")) nbasis_choix <- min(65, max(20, N %/% 5))
+nbasis_choix <- min(65, max(15, N %/% 3))
 nbasis <- nbasis_choix
 base_bspline <- create.bspline.basis(rangeval = rangeval, nbasis = nbasis, norder = 4)
 
 # ─── 2. Recherche de λ optimal par GCV ───
-# On teste une grille logarithmique de λ et on garde celui qui minimise
-# l'erreur de validation croisée généralisée (somme sur les 35 stations).
-log_lambdas <- seq(-2, 8, length.out = 80)
+# Grille large [-4, 8] pour couvrir courbes peu/moyennement lissées (growth, tecator)
+# jusqu'aux très lissées (météo). Longueur identique pour tous les datasets.
+log_lambdas <- seq(-4, 8, length.out = 80)
 lambdas_grille <- 10^log_lambdas
 gcv_scores <- numeric(length(lambdas_grille))
 
@@ -62,7 +72,7 @@ cat(sprintf("  λ retenu = %.2f\n", lambda_opt))
 # ─── 4. Lissage définitif ───
 fdPar_opt <- fdPar(fdobj = base_bspline, Lfdobj = 2, lambda = lambda_opt)
 smooth_result <- smooth.basis(argvals = t_jours, y = Y_brut, fdParobj = fdPar_opt)
-X_hat <- smooth_result$fd   # objet fd : les 35 courbes lissées
+X_hat <- smooth_result$fd   # objet fd : les n courbes lissées
 
 cat(sprintf("  Résultat : %d courbes fonctionnelles dans L²([%.0f,%.0f])\n",
             ncol(X_hat$coefs), rangeval[1], rangeval[2]))

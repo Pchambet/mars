@@ -18,7 +18,6 @@
 \usetikzlibrary{arrows.meta, positioning, fit, backgrounds, calc}
 \usepackage{hyperref}
 \hypersetup{colorlinks=true, linkcolor=blue!60!black, urlcolor=blue!70!black}
-
 % ─── Commandes ───
 \newcommand{\R}{\mathbb{R}}
 \newcommand{\Ltwo}{L^2(\mathcal{T})}
@@ -240,8 +239,8 @@ $\sim\!80$). D'où la nécessité de normaliser avant toute combinaison.
 \begin{definition}[$D_s$]
 \[
   D_s(i,j) = \left\| Z_i^{\text{std}} - Z_j^{\text{std}} \right\|_2
-  = \sqrt{\sum_{l=1}^{p} \left( \frac{z_{il} - \bar{z}_l}{\sigma_{z_l}} \right)^2
-    - \left( \frac{z_{jl} - \bar{z}_l}{\sigma_{z_l}} \right)^2}
+  = \sqrt{\sum_{l=1}^{p} \left( \frac{z_{il} - \bar{z}_l}{\sigma_{z_l}}
+    - \frac{z_{jl} - \bar{z}_l}{\sigma_{z_l}} \right)^2}
 \]
 où $Z^{\text{std}} = (Z - \bar{Z}) / \sigma_Z$ est la standardisation
 variable par variable.
@@ -521,6 +520,7 @@ Schur). Donc $K = K_f \cdot K_s$ est s.d.p., et $\DK$ est une distance valide.
 
 \begin{table}[H]
 \centering
+\resizebox{\textwidth}{!}{%
 \renewcommand{\arraystretch}{1.4}
 \begin{tabular}{p{2.8cm}ccp{4.5cm}c}
   \toprule
@@ -538,10 +538,12 @@ Schur). Donc $K = K_f \cdot K_s$ est s.d.p., et $\DK$ est une distance valide.
   \multicolumn{5}{l}{\textit{Stratégie A (pas de matrice de distances)}} \\
   $W = [\xi \,|\, Z]$ & Mixte & $K$ (nb scores) & Var.\ cumulée $\geq 95\%$ & k-means \\
   \bottomrule
-\end{tabular}
+\end{tabular}%
+}
 \caption{Récapitulatif de toutes les approches.}
 \label{tab:recap}
 \end{table}
+
 
 \section{Quand utiliser quoi~?}
 
