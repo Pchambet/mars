@@ -18,12 +18,12 @@ library(cluster)
 library(mclust)
 
 # --- Paramètres (modifiables) ---
-# Grille réduite pour prototype rapide ; augmenter pour résultats finals
-ALPHAS <- c(0, 0.5, 1)      # prototype ; c(0, 0.1, ..., 1) pour grille fine
-OMEGAS <- c(0, 0.5, 1)
-K_VALUES <- 2:6
-B <- 10                     # prototype ; 50 pour final
-SUBSAMPLE_FRAC <- 0.8
+# Valeurs par défaut si non définies par un script parent (ex. run_all_stability.R)
+if (!exists("ALPHAS"))   ALPHAS   <- seq(0, 1, by = 0.25)   # grille moyenne
+if (!exists("OMEGAS"))   OMEGAS   <- seq(0, 1, by = 0.25)
+if (!exists("K_VALUES")) K_VALUES <- 2:6
+if (!exists("B"))        B        <- 15                     # 50 pour final
+if (!exists("SUBSAMPLE_FRAC")) SUBSAMPLE_FRAC <- 0.8
 
 # --- Dataset : utiliser DATASET si défini, sinon canadian ---
 if (!exists("DATASET")) DATASET <- "canadian"
@@ -54,6 +54,9 @@ n_subsample <- max(2, floor(n * SUBSAMPLE_FRAC))
 
 # Vérité terrain (si disponible, pour évaluation finale)
 labels_vrai <- if (exists("regions")) as.integer(regions) else NULL
+
+results_dir <- "experiments/01_stabilite/results"
+dir.create(results_dir, showWarnings = FALSE, recursive = TRUE)
 
 # --- Grille des triplets ---
 grille <- expand.grid(k = K_VALUES, alpha = ALPHAS, omega = OMEGAS)
@@ -108,20 +111,38 @@ cat(sprintf("  Triplet stabilité-optimal : k = %d, α = %.1f, ω = %.1f\n",
 cat(sprintf("  Stabilité = %.3f\n", stab_best))
 
 # --- Si vérité terrain : ARI du triplet stabilité-optimal ---
+ari_stab <- NA
 if (!is.null(labels_vrai)) {
   Dp_best <- sqrt((1 - alpha_best) * D0_norm^2 + alpha_best * D1_norm^2)
   Dw_best <- sqrt(omega_best * Dp_best^2 + (1 - omega_best) * Ds_norm^2)
   pam_best <- pam(as.dist(Dw_best), k = k_best, diss = TRUE)
   ari_stab <- adjustedRandIndex(pam_best$clustering, labels_vrai)
   cat(sprintf("  ARI (vs vérité terrain, k=%d) = %.3f\n", k_best, ari_stab))
+  # Matrice de confusion : lignes = vraies classes, colonnes = clusters prédits
+  conf_mat <- as.matrix(table(regions, pam_best$clustering))
+  write.csv(conf_mat, file.path(results_dir, sprintf("confusion_%s.csv", DATASET)))
 }
 
 # --- Sauvegarde ---
-results_dir <- "experiments/01_stabilite/results"
-dir.create(results_dir, showWarnings = FALSE, recursive = TRUE)
 fichier <- file.path(results_dir, sprintf("stabilite_%s.csv", DATASET))
 write.csv(grille, fichier, row.names = FALSE)
 cat(sprintf("\n  Résultats sauvegardés : %s\n", fichier))
+
+# Résumé : meilleur triplet + ARI (pour analyse globale)
+best_row <- data.frame(
+  dataset = DATASET,
+  k = k_best,
+  alpha = alpha_best,
+  omega = omega_best,
+  stabilite = stab_best,
+  ari = ari_stab,
+  n = n,
+  n_subsample = n_subsample,
+  B = B,
+  stringsAsFactors = FALSE
+)
+fichier_best <- file.path(results_dir, sprintf("stabilite_%s_best.csv", DATASET))
+write.csv(best_row, fichier_best, row.names = FALSE)
 
 # --- Top 5 triplets ---
 grille_ord <- grille[order(-grille$stabilite), ]

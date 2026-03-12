@@ -34,9 +34,32 @@ La stabilité sélectionne-t-elle des \((\alpha, \omega)\) plus proches de l'ARI
 - Sur Canadian Weather : stabilité choisit \((\alpha, \omega)\) proche de \((0.6, 0.8)\) ?
 - ARI obtenu avec le triplet stabilité-optimal \(\geq\) ARI silhouette-optimal ?
 
+## Structure des scripts
+
+- **`run_stabilite.R`** : exécute la stabilité pour un dataset (DATASET défini avant `source()`).
+- **`run_all_stability.R`** : lance les 4 datasets avec les paramètres globaux.
+- **`analyse_stabilite.R`** : charge les CSV, affiche les meilleurs triplets, génère les heatmaps dans `figures/`.
+- **`generate_confusion.R`** : recalcule les partitions stabilité-optimales et sauvegarde les matrices de confusion dans `results/`.
+- **`rapport_stabilite.tex`** : rapport LaTeX résumant protocole, résultats, matrices de confusion et interprétations. Compilation : `make` depuis ce dossier.
+
+Paramètres modifiables dans `run_all_stability.R` : ALPHAS, OMEGAS, K_VALUES, B, SUBSAMPLE_FRAC.
+
+## Choix du sous-échantillonnage (SUBSAMPLE_FRAC)
+
+| Valeur | Effet | Usage typique |
+|--------|-------|---------------|
+| **80 %** | Compromis standard : perturbation suffisante pour tester la stabilité, assez de données pour garder la structure | Recommandé par défaut |
+| 90 % | Moins de perturbation, ARI plus élevés en moyenne, moins discriminatif entre triplets | Données très bruitées ou petits échantillons |
+| 63 % | ≈ 1−1/e (fraction attendue dans un bootstrap) ; plus de variabilité | Certaines méthodes de stabilité |
+| 50 % | Valeur par défaut de `clusterboot` (fpc) ; forte perturbation | Détecter l'instabilité, mais peut sur-pénaliser les grands k quand n est petit |
+
+Avec n petit (ex. Canadian n=35), garder au moins ~80 % évite des sous-échantillons trop petits pour PAM à k=4 ou 6.
+
 ## Statut
 
 - [x] Protocole validé
 - [x] Implémentation (`run_stabilite.R`)
-- [x] Résultats Canadian (prototype) : stabilité-optimal (k=2, α=0.5, ω=0.5)
-- [ ] Résultats sur les 4 datasets (grille fine)
+- [x] Exécution multi-datasets (`run_all_stability.R`)
+- [x] Résultats sur les 4 datasets (grille α,ω ∈ {0, 0.25, 0.5, 0.75, 1}, B=15)
+- [x] Analyse et heatmaps (`analyse_stabilite.R`)
+- [x] Grille fine (α, ω ∈ {0, 0.1, …, 1}, 11×11) + B=50
