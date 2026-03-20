@@ -41,9 +41,10 @@ littérature : \textbf{nselectboot} (Fang \& Wang, 2012), implémentée dans R
 bootstrap. Un ancien protocole de « stabilité » ad hoc (sans article de référence)
 a été retiré pour clarifier le message. On teste une grille 21×21 en
 $(\alpha,\omega)$ sur quatre jeux de données ; les labels ne servent qu'à
-évaluer l'ARI une fois $k$ choisi. Un \textbf{volet simulé} ajoute des données
-artificielles où le vrai $k$ est connu : l'idée est de voir si la méthode se
-comporte bien quand on connaît la réponse. Pour gagner du temps, ce volet utilise
+évaluer l'ARI une fois $k$ choisi. Des \textbf{données simulées} et des
+\textbf{études sur données simulées} complètent le rapport : données artificielles
+où le vrai $k$ est connu, pour voir si la méthode se comporte bien quand on
+connaît la réponse. Pour gagner du temps, ces calculs utilisent
 une grille plus lâche ($6\times6$) et moins de répétitions bootstrap ($B=60$) que
 les quatre jeux réels ($21\times21$, $B=150$).
 \end{abstract}
@@ -257,7 +258,7 @@ $\times$ = meilleur $(\alpha,\omega)$ pour ce $k$ (voir script d'analyse).
 \end{center}
 
 % ============================================================================
-\section{Volet simulé (complément contrôlé)}
+\section{Etudes sur données simulées}
 % ============================================================================
 
 On applique la \textbf{même idée} que plus haut à des \textbf{données simulées},
@@ -289,7 +290,7 @@ S3 & 1 & 3 & 0{,}083 & 5{,}5 & 6 \\
 S4 & 1 & 3 & 0{,}000 & 6 & 6 \\
 \bottomrule
 \end{tabular}
-\caption{Volet simulé : grille $6\times6$, $B=60$, graine~1. Un calcul aussi fin
+\caption{Données simulées : grille $6\times6$, $B=60$, graine~1. Un calcul aussi fin
 que sur les données réelles ($21\times21$, $B=150$) est possible mais beaucoup
 plus long.}
 \label{tab:sim-summary}
@@ -328,7 +329,7 @@ Même réglage que pour le tableau~\ref{tab:sim-summary}.
   \item $k \in \{2,\ldots,6\}$, $B=150$ répétitions bootstrap pour nselectboot.
   \item Même prétraitement que le pipeline principal :\\
     \path{src/01_lissage.R}, \path{src/02_fpca.R}, \path{src/03_distances.R}.
-  \item \textbf{Volet simulé (réglage utilisé dans ce rapport) :} grille
+  \item \textbf{Données simulées (réglage utilisé dans ce rapport) :} grille
     $6\times6$ en $(\alpha,\omega)$, $B=60$, $k\in\{2,\ldots,6\}$. On peut en
     faire une version aussi fine que pour les données réelles ($21\times21$,
     $B=150$), au prix d'un temps de calcul beaucoup plus long.
@@ -341,8 +342,8 @@ Même réglage que pour le tableau~\ref{tab:sim-summary}.
 L'expérience 1 s'appuie sur une méthode publiée (instabilité bootstrap, Fang \&
 Wang) pour choisir $k$ à $(\alpha,\omega)$ fixé, puis explore toute la grille.
 Les labels servent uniquement à l'ARI et aux matrices de confusion, pas au choix
-de $(k,\alpha,\omega)$. Le volet simulé illustre la méthode quand le vrai $k$ est
-connu ; il ne remplace pas l'étude sur les quatre jeux réels.
+de $(k,\alpha,\omega)$. Les études sur données simulées illustrent la méthode quand
+le vrai $k$ est connu ; elles ne remplacent pas l'étude sur les quatre jeux réels.
 
 \vspace{1em}
 \noindent\textbf{Références :}
