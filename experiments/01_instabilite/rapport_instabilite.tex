@@ -16,15 +16,14 @@
 \usepackage{hyperref}
 \hypersetup{colorlinks=true, linkcolor=blue}
 
-% Heatmaps simulées : \HeatmapSim{S1}{1} → fichier figures/nselectboot_heatmap_sim_S1_seed1.png
+% Heatmaps simulées (fichiers dans figures/)
 \newcommand{\HeatmapSim}[2]{%
 \IfFileExists{figures/nselectboot_heatmap_sim_#1_seed#2.png}{%
 \begin{center}
 \includegraphics[width=0.85\textwidth]{figures/nselectboot_heatmap_sim_#1_seed#2.png}
 \end{center}}{%
 \begin{center}
-\textit{(Figure absente : \texttt{nselectboot\_heatmap\_sim\_#1\_seed#2.png} — exécuter
-\texttt{run\_nselectboot\_simulated.R} puis \texttt{analyse\_nselectboot\_simulated.R}.)}
+\textit{(Figure indisponible pour le scénario #1, graine #2.)}
 \end{center}}}
 
 \title{Rapport d'instabilité --- Expérience 01 (Fang \& Wang)}
@@ -42,10 +41,11 @@ littérature : \textbf{nselectboot} (Fang \& Wang, 2012), implémentée dans R
 bootstrap. Un ancien protocole de « stabilité » ad hoc (sans article de référence)
 a été retiré pour clarifier le message. On teste une grille 21×21 en
 $(\alpha,\omega)$ sur quatre jeux de données ; les labels ne servent qu'à
-évaluer l'ARI une fois $k$ choisi. Un \textbf{volet simulé} (données hybrides Cas2\_deriv, aligné sur l'expérience~03)
-complète l'étude sous vérité de $k$ connue. Les figures et CSV simulés versionnés
-ici proviennent du \textbf{mode rapide} (grille $6\times6$, $B=60$) pour un coût
-raisonnable ; les quatre jeux réels restent en grille $21\times21$, $B=150$.
+évaluer l'ARI une fois $k$ choisi. Un \textbf{volet simulé} ajoute des données
+artificielles où le vrai $k$ est connu : l'idée est de voir si la méthode se
+comporte bien quand on connaît la réponse. Pour gagner du temps, ce volet utilise
+une grille plus lâche ($6\times6$) et moins de répétitions bootstrap ($B=60$) que
+les quatre jeux réels ($21\times21$, $B=150$).
 \end{abstract}
 
 \tableofcontents
@@ -260,31 +260,19 @@ $\times$ = meilleur $(\alpha,\omega)$ pour ce $k$ (voir script d'analyse).
 \section{Volet simulé (complément contrôlé)}
 % ============================================================================
 
-On enrichit l'expérience~1 avec le \textbf{même} type de procédure nselectboot
-appliquée aux \textbf{données simulées} du projet (Cas2\_deriv, scénarios S1--S4
-comme l'expérience~03). Ici $k_{\mathrm{vrai}}$ et les labels sont fournis par le
-générateur : l'intérêt est de \textbf{valider le pipeline} sous hypothèses
-contrôlées, pas de conclure sur le monde réel sans les quatre jeux ci-dessus.
+On applique la \textbf{même idée} que plus haut à des \textbf{données simulées},
+en quatre situations notées S1 à S4. Dans chaque cas on connaît le vrai nombre de
+groupes $k_{\mathrm{vrai}}=3$ ici : on compare avec ce que la méthode retient sur
+la grille de $(\alpha,\omega)$.
 
-\paragraph{Risques et limites.}
-\begin{itemize}
-  \item Le générateur impose une structure de covariance et un couplage
-    fonctionnel / vectoriel qui ne coïncident pas nécessairement avec les
-    données réelles.
-  \item Un nombre de seeds et de scénarios suffisant doit être documenté pour
-    éviter tout cherry-picking (voir \texttt{results\_simulated/README.md}).
-  \item Ce volet est explicitement \textbf{complémentaire} : les tableaux et
-    heatmaps sur Canadian, AEMET, Growth et Tecator restent la référence
-    empirique principale.
-\end{itemize}
-
-\paragraph{Synthèse numérique (seed référence = premier de \texttt{SEEDS\_SIM}, ici 1).}
-Le fichier \path{results_simulated/nselectboot_simulated_summary_by_run.csv}
-agrège, pour chaque (scénario, seed), la proportion de couples $(\alpha,\omega)$
-pour lesquels $k_{\mathrm{opt}} = k_{\mathrm{vrai}}$, la médiane et le mode de
-$k_{\mathrm{opt}}$ sur la grille. Les valeurs ci-dessous correspondent au
-\textbf{dernier run versionné} (mode rapide : pas $0{,}2$ en $\alpha$ et $\omega$,
-grille $6\times6$, $B=60$ ; orchestrateur \path{run_simulated_instabilite_only.R}).
+\paragraph{Résultats chiffrés (seed fixée à 1).}
+Pour chaque situation, le tableau indique : la part des couples
+$(\alpha,\omega)$ de la grille pour lesquels le $k$ choisi par la méthode est
+exactement le vrai $k$ ; la \emph{médiane} des $k$ choisis sur toute la grille ;
+le \emph{mode} (valeur la plus fréquente). Ces nombres viennent d'un calcul
+\textbf{plus léger} qu'en données réelles : grille $6\times6$ en $(\alpha,\omega)$
+(pas de $0{,}05$ entre les points), et $B=60$ tirages bootstrap au lieu de
+$B=150$, pour limiter le temps de calcul.
 
 \begin{table}[H]
 \centering
@@ -301,15 +289,27 @@ S3 & 1 & 3 & 0{,}083 & 5{,}5 & 6 \\
 S4 & 1 & 3 & 0{,}000 & 6 & 6 \\
 \bottomrule
 \end{tabular}
-\caption{Volet simulé (\texttt{nselectboot\_simulated\_summary\_by\_run.csv}). Grille $6\times6$, $B=60$ ; pour une grille $21\times21$ et $B=150$ alignés sur les jeux réels, lancer \texttt{run\_simulated\_instabilite\_only.R -{}-full}.}
+\caption{Volet simulé : grille $6\times6$, $B=60$, graine~1. Un calcul aussi fin
+que sur les données réelles ($21\times21$, $B=150$) est possible mais beaucoup
+plus long.}
 \label{tab:sim-summary}
 \end{table}
 
-\paragraph{Heatmaps (instabilité par $(\alpha,\omega)$ et $k$).}
-Pour chaque scénario, une figure est produite par
-\texttt{analyse\_nselectboot\_simulated.R} à partir des CSV
-\texttt{nselectboot\_simulated\_S*\_seed*.csv}. Ci-dessous : seed~1, même run que
-le tableau~\ref{tab:sim-summary}.
+\paragraph{Observation sur les heatmaps.}
+Pour chaque situation on trace une carte par valeur de $k$ testée : le
+\textbf{bleu} correspond à une faible instabilité (c'est mieux), le \textbf{rouge}
+à une instabilité forte. En lisant les quatre figures avec le
+tableau~\ref{tab:sim-summary}, on voit une différence nette entre les deux
+premiers cas et les deux derniers. Pour \textbf{S1} et \textbf{S2}, les zones les
+plus bleues concernent souvent $k=3$, ce qui va dans le sens du vrai $k$ et du
+tableau (beaucoup de couples $(\alpha,\omega)$ choisissent le bon $k$). Pour
+\textbf{S3} et surtout \textbf{S4}, les cartes montrent plutôt des instabilités
+minimales pour des $k$ plus grands que 3 : visuellement, le ``bon'' niveau se
+décale, ce qui colle au fait que la méthode retient rarement ou jamais
+$k=3$ sur toute la grille.
+
+\paragraph{Les quatre cartes.}
+Même réglage que pour le tableau~\ref{tab:sim-summary}.
 
 \HeatmapSim{S1}{1}
 
@@ -328,11 +328,10 @@ le tableau~\ref{tab:sim-summary}.
   \item $k \in \{2,\ldots,6\}$, $B=150$ répétitions bootstrap pour nselectboot.
   \item Même prétraitement que le pipeline principal :\\
     \path{src/01_lissage.R}, \path{src/02_fpca.R}, \path{src/03_distances.R}.
-  \item \textbf{Simulé (mode par défaut du script orchestrateur) :} grille
-    $6\times6$ en $(\alpha,\omega)$, $B=60$, $k\in\{2,\ldots,6\}$ ; sorties
-    \texttt{experiments/01\_instabilite/results\_simulated/} et heatmaps
-    \texttt{figures/nselectboot\_heatmap\_sim\_*.png}. Mode \texttt{-{}-full} :
-    $21\times21$, $B=150$, aligné sur les quatre jeux réels.
+  \item \textbf{Volet simulé (réglage utilisé dans ce rapport) :} grille
+    $6\times6$ en $(\alpha,\omega)$, $B=60$, $k\in\{2,\ldots,6\}$. On peut en
+    faire une version aussi fine que pour les données réelles ($21\times21$,
+    $B=150$), au prix d'un temps de calcul beaucoup plus long.
 \end{itemize}
 
 % ============================================================================
@@ -342,8 +341,8 @@ le tableau~\ref{tab:sim-summary}.
 L'expérience 1 s'appuie sur une méthode publiée (instabilité bootstrap, Fang \&
 Wang) pour choisir $k$ à $(\alpha,\omega)$ fixé, puis explore toute la grille.
 Les labels servent uniquement à l'ARI et aux matrices de confusion, pas au choix
-de $(k,\alpha,\omega)$. Le volet simulé ajoute une validation sous modèle sans
-se substituer aux résultats sur les quatre jeux réels.
+de $(k,\alpha,\omega)$. Le volet simulé illustre la méthode quand le vrai $k$ est
+connu ; il ne remplace pas l'étude sur les quatre jeux réels.
 
 \vspace{1em}
 \noindent\textbf{Références :}
