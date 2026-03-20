@@ -25,18 +25,18 @@ pipeline:
 	@Rscript -e 'source("setup.R"); for (d in c("canadian","aemet","growth","tecator")) { DATASET <<- d; source("src/main.R") }'
 	@echo ">>> Pipeline terminé."
 
-# Expérience 01 : stabilité + nselectboot + analyses + matrices de confusion
+# Expérience 01 : instabilité (nselectboot) + analyses + matrices de confusion
 exp01:
-	@echo ">>> Expérience 01 (stabilité, nselectboot)..."
-	@Rscript -e 'setwd("."); source("experiments/01_stabilite/run_all_complete.R")'
+	@echo ">>> Expérience 01 (instabilité / nselectboot)..."
+	@Rscript -e 'setwd("."); source("experiments/01_instabilite/run_all_complete.R")'
 	@echo ">>> Expérience 01 terminée."
 
-# Compilation LaTeX : docs/ + experiments/01_stabilite/
+# Compilation LaTeX : docs/ + experiments/01_instabilite/
 latex:
 	@echo ">>> Compilation LaTeX (docs/)..."
 	@$(MAKE) -C docs all
-	@echo ">>> Compilation LaTeX (experiments/01_stabilite/)..."
-	@$(MAKE) -C experiments/01_stabilite
+	@echo ">>> Compilation LaTeX (experiments/01_instabilite/)..."
+	@$(MAKE) -C experiments/01_instabilite
 	@echo ">>> LaTeX terminé."
 
 # Test rapide : 1 dataset (canadian) + compilation rapport synthèse
@@ -49,7 +49,7 @@ test:
 # Nettoyage des artefacts LaTeX
 clean:
 	$(MAKE) -C docs clean
-	$(MAKE) -C experiments/01_stabilite clean
+	$(MAKE) -C experiments/01_instabilite clean
 
 help:
 	@echo "Cibles disponibles :"

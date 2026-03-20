@@ -6,13 +6,13 @@
 # Les heatmaps nselectboot montrent : instabilité par (α, ω) et k.
 # Pour comparer : stabilité = "haut = bon", instabilité = "bas = bon".
 #
-# Usage : source("experiments/01_stabilite/analyse_nselectboot.R")
+# Usage : source("experiments/01_instabilite/analyse_nselectboot.R")
 # Prérequis : run_all_nselectboot.R (nselectboot_*.csv dans results/)
 #
 # ============================================================================
 
-results_dir <- "experiments/01_stabilite/results"
-fig_dir     <- "experiments/01_stabilite/figures"
+results_dir <- "experiments/01_instabilite/results"
+fig_dir     <- "experiments/01_instabilite/figures"
 DATASETS    <- c("canadian", "aemet", "growth", "tecator")
 
 dir.create(fig_dir, showWarnings = FALSE, recursive = TRUE)

@@ -57,7 +57,7 @@ src/05_visualisation.R → figures
 
 Chaque script définit des objets en mémoire (pas de fonctions encapsulées dans des packages). Le pipeline est **séquentiel** : chaque étape dépend des sorties de la précédente.
 
-**Expériences (`experiments/01_stabilite/`)** : pipeline centré sur **nselectboot** (instabilité, Fang & Wang) : `run_all_nselectboot.R`, `analyse_nselectboot.R`, `generate_confusion_nselectboot.R`, orchestrés par `run_all_complete.R`. Anciens scripts « stabilité » ad hoc dans `archive/`. Pas de notebooks Rmd.
+**Expériences (`experiments/01_instabilite/`)** : pipeline centré sur **nselectboot** (instabilité, Fang & Wang) : `run_all_nselectboot.R`, `analyse_nselectboot.R`, `generate_confusion_nselectboot.R`, orchestrés par `run_all_complete.R`. Anciens scripts « stabilité » ad hoc dans `archive/`. Pas de notebooks Rmd.
 
 #### Tests unitaires
 
@@ -81,7 +81,7 @@ La validation actuelle repose sur :
 - `rapport_synthese.tex` : ~1 120 lignes, **un seul fichier** (pas de `\input{}`).
 - `rapport_distances.tex` : ~636 lignes.
 - `rapport_canadian_weather.tex` : ~914 lignes.
-- `rapport_stabilite.tex` (experiments/01_stabilite/) : ~468 lignes.
+- `rapport_instabilite.tex` (experiments/01_instabilite/) : ~468 lignes.
 
 **Exception** : `docs/biblio/notes/section_rs_hfv_pca_module.tex` est conçu pour être inclus via `\input{}` dans un rapport principal, mais n'est pas utilisé dans `rapport_synthese.tex` actuellement.
 
@@ -104,13 +104,13 @@ D'après la revue et les objectifs du projet :
 
 **État actuel** :
 - `docs/Makefile` : compile uniquement le LaTeX (pas d'exécution R).
-- `experiments/01_stabilite/Makefile` : compile `rapport_stabilite.tex` uniquement.
+- `experiments/01_instabilite/Makefile` : compile `rapport_instabilite.tex` uniquement.
 - `run_all_complete.R` : exécute les 5 étapes de l'expérience 01, mais ne compile pas le rapport.
 
 **À mettre en place** : un point d'entrée unique (Makefile racine ou `run_all.sh`) qui :
 1. Exécute `source("setup.R")` puis `source("src/main.R")` pour les 4 datasets.
 2. Exécute `run_all_complete.R` pour l'expérience 01 (optionnel ou cible séparée).
-3. Compile les rapports LaTeX (`docs/` et `experiments/01_stabilite/`).
+3. Compile les rapports LaTeX (`docs/` et `experiments/01_instabilite/`).
 
 → **Fichier créé** : `Makefile` à la racine + `run_all.sh` (script bash de secours).
 

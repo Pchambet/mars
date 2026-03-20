@@ -26,8 +26,9 @@ Comparaison avec les sorties actuelles du pipeline (seed = 42) :
 | Canadian | B | 0.448 / 0.616 | 0.448 / 0.616 | OK |
 | Canadian | C | 0.329 / 0.686 | 0.329 / 0.686 | OK |
 | Growth | Tous | — | — | OK |
-| AEMET | Tous | — | — | OK |
 | Tecator | C (Silhouette) | 0.266 | 0.265 | Arrondi |
+
+*(Le jeu AEMET a été retiré du rapport de synthèse : étiquettes non opérationnelles pour la validation.)*
 
 **Conclusion** : Les valeurs du rapport correspondent au pipeline actuel. La différence 0.266 vs 0.265 est un arrondi négligeable.
 
@@ -45,7 +46,7 @@ Le rapport indique : « D₀ ∈ [3.9, 532] ».
 
 ### 3.1 Faute d’orthographe (ligne 372)
 
-**Texte actuel** : « soir $D_0$ seul (Canadian, Growth), soit $D_0$ seul (AEMET, Tecator) »  
+**Texte actuel** (exemple historique) : « soit $D_s$ seul (Canadian, Growth), soit $D_0$ seul (Tecator) » après correction des jeux sans AEMET.  
 
 **Corrections appliquées** :
 - « soir » → « soit »
@@ -53,16 +54,16 @@ Le rapport indique : « D₀ ∈ [3.9, 532] ».
 
 ### 3.2 Ambiguïté dans l’abstract (lignes 86–88)
 
-**Texte actuel** : « les dérivées sont systématiquement informatives ($\alpha > 0.6$ optimal sur 4/4 datasets) ».
+**Texte actuel** : « les dérivées sont systématiquement informatives ($\alpha > 0.6$ optimal sur 3/3 jeux retenus) ».
 
-Le pipeline choisit (α, ω) par **silhouette**, ce qui donne α = 0 pour les 4 datasets. Le rapport parle ici des α **ARI-optimaux**. *Vérifié* : Canadian a bien (α=0.6, ω=0.8) avec ARI=0.898.
+Le pipeline choisit (α, ω) par **silhouette** (comportement distinct des α ARI-optimaux). Le rapport parle ici des α **ARI-optimaux**. *Vérifié* : Canadian a bien (α=0.6, ω=0.8) avec ARI=0.898.
 
 **Proposition** : Préciser dans l’abstract :  
-« …les dérivées sont systématiquement informatives lorsque l’on optimise par rapport à l’ARI ($\alpha_{\text{ARI-optimal}} \geq 0.6$ sur 4/4 datasets) ».
+« …les dérivées sont systématiquement informatives lorsque l’on optimise par rapport à l’ARI ($\alpha_{\text{ARI-optimal}} \geq 0.6$ sur les jeux retenus) ».
 
 ### 3.3 Reproductibilité des α ARI-optimaux (Section 5.3)
 
-Le rapport affirme que les α ARI-optimaux sont dans [0.6, 1.0] et illustre avec une figure (CAN, AEM, GRO, TEC), mais le pipeline ne calcule pas ces valeurs : il optimise uniquement par silhouette.
+Le rapport affirme que les α ARI-optimaux sont dans [0.6, 1.0] et illustre avec une figure (CAN, GRO, TEC) ; le pipeline principal optimise par silhouette, pas par ARI.
 
 **Propositions** :
 1. **Ne pas** introduire de réglage des (α, ω) par maximisation de l’ARI dans le pipeline : l’ARI sert à l’évaluation, pas au choix des hyperparamètres.
@@ -106,7 +107,7 @@ Le texte distingue bien « silhouette-optimal » et « ARI-optimal », mais l’
 ### Points à améliorer
 
 - **Placement des tableaux** : certains tableaux seraient plus lisibles en paysage ou avec `longtable` s’ils sont très larges.
-- **Figure 5 (α ARI-optimaux)** : les labels CAN, AEM, GRO, TEC sur l’axe α sont lisibles, mais une légende rappelant qu’il s’agit des α ARI-optimaux serait utile.
+- **Figure (α ARI-optimaux)** : labels CAN, GRO, TEC ; une légende rappelant qu’il s’agit des α ARI-optimaux serait utile.
 - **Références** : Tibshirani et al., Calinski-Harabasz, Davies-Bouldin sont mentionnés mais non référencés formellement. À compléter en bibliographie.
 
 ---
@@ -125,7 +126,7 @@ Le texte distingue bien « silhouette-optimal » et « ARI-optimal », mais l’
 
 1. **Formule de nbasis** : Le rapport ne mentionne pas la règle `nbasis = min(65, max(15, N %/% 3))` introduite récemment.
 2. **Grille GCV** : Le rapport ne précise pas la plage `log λ ∈ [-4, 8]` pour le lissage.
-3. **Données** : Le rapport décrit correctement les quatre datasets (Canadian, Growth, AEMET, Tecator).
+3. **Données** : Le rapport décrit trois jeux (Canadian, Growth, Tecator). AEMET n’y figure plus.
 
 ---
 

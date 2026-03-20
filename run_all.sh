@@ -20,21 +20,21 @@ case "$MODE" in
     ;;
   exp01)
     echo ">>> Expérience 01..."
-    Rscript -e 'source("experiments/01_stabilite/run_all_complete.R")'
+    Rscript -e 'source("experiments/01_instabilite/run_all_complete.R")'
     ;;
   latex)
     echo ">>> Compilation LaTeX..."
     make -C docs all
-    make -C experiments/01_stabilite rapport_stabilite.pdf
+    make -C experiments/01_instabilite rapport_instabilite.pdf
     ;;
   all)
     echo ">>> Pipeline R..."
     Rscript -e 'source("setup.R"); for (d in c("canadian","aemet","growth","tecator")) { DATASET <<- d; source("src/main.R") }'
     echo ">>> Expérience 01..."
-    Rscript -e 'source("experiments/01_stabilite/run_all_complete.R")'
+    Rscript -e 'source("experiments/01_instabilite/run_all_complete.R")'
     echo ">>> LaTeX..."
     make -C docs all
-    make -C experiments/01_stabilite rapport_stabilite.pdf
+    make -C experiments/01_instabilite rapport_instabilite.pdf
     ;;
   *)
     echo "Usage: $0 [pipeline|exp01|latex|all]"

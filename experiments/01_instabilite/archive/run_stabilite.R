@@ -7,10 +7,10 @@
 # partition sur sous-échantillon). Le triplet avec stabilité max est retenu.
 #
 # Usage :
-#   source("experiments/01_stabilite/run_stabilite.R")
+#   source("experiments/01_instabilite/run_stabilite.R")
 # ou depuis R :
 #   DATASET <- "canadian"
-#   source("experiments/01_stabilite/run_stabilite.R")
+#   source("experiments/01_instabilite/run_stabilite.R")
 #
 # ============================================================================
 
@@ -55,7 +55,7 @@ n_subsample <- max(2, floor(n * SUBSAMPLE_FRAC))
 # Vérité terrain (si disponible, pour évaluation finale)
 labels_vrai <- if (exists("regions")) as.integer(regions) else NULL
 
-results_dir <- "experiments/01_stabilite/results"
+results_dir <- "experiments/01_instabilite/results"
 dir.create(results_dir, showWarnings = FALSE, recursive = TRUE)
 
 # --- Grille des triplets ---

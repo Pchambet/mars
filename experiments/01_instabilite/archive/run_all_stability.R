@@ -3,7 +3,7 @@
 # ============================================================================
 #
 # OBSOLÈTE — déplacé dans archive/. Usage (depuis la racine du projet) :
-#   source("experiments/01_stabilite/archive/run_all_stability.R")
+#   source("experiments/01_instabilite/archive/run_all_stability.R")
 #
 # ============================================================================
 
@@ -40,10 +40,10 @@ set.seed(42)
 # --- Étape 2 : Exécution pour chaque dataset ---
 for (d in DATASETS) {
   DATASET <- d
-  source("experiments/01_stabilite/archive/run_stabilite.R", local = FALSE)
+  source("experiments/01_instabilite/archive/run_stabilite.R", local = FALSE)
 }
 
 cat("\n══════════════════════════════════════════════════════════════════════\n")
-cat("  Exécution terminée. Résultats dans experiments/01_stabilite/results/\n")
-cat("  Lancer : source(\"experiments/01_stabilite/archive/analyse_stabilite.R\")\n")
+cat("  Exécution terminée. Résultats dans experiments/01_instabilite/results/\n")
+cat("  Lancer : source(\"experiments/01_instabilite/archive/analyse_stabilite.R\")\n")
 cat("══════════════════════════════════════════════════════════════════════\n\n")

@@ -25,8 +25,8 @@ Thumbs.db
 # Large data files (not versioned — download separately)
 data/shom_celerite_2018.csv
 
-# Generated figures (reproductibles via src/main.R)
-figures/
+# Generated figures (reproductibles via src/main.R) — racine du dépôt uniquement
+/figures/
 
 # Large data outputs (keep raw data in data/)
 *.rds

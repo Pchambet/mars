@@ -1,12 +1,12 @@
 # ============================================================================
 # Génère les matrices de confusion à partir des triplets stabilité-optimaux
 # ============================================================================
-# Usage : source("experiments/01_stabilite/generate_confusion.R")
+# Usage : source("experiments/01_instabilite/generate_confusion.R")
 # Prérequis : run_all_stability.R déjà exécuté (_best.csv présents)
 # ============================================================================
 
 library(cluster)
-results_dir <- "experiments/01_stabilite/results"
+results_dir <- "experiments/01_instabilite/results"
 DATASETS <- c("canadian", "aemet", "growth", "tecator")
 preprocess_files <- c(
   canadian = "src/00_preprocess.R",

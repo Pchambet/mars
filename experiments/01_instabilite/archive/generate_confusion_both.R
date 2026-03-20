@@ -4,13 +4,13 @@
 # Stabilité : triplet (k, α, ω) du meilleur selon stabilité
 # nselectboot : triplet où k_opt = k_vrai (ou le plus proche)
 #
-# Usage : source("experiments/01_stabilite/generate_confusion_both.R")
+# Usage : source("experiments/01_instabilite/generate_confusion_both.R")
 # ============================================================================
 
 library(cluster)
 library(mclust)
 
-results_dir <- "experiments/01_stabilite/results"
+results_dir <- "experiments/01_instabilite/results"
 DATASETS    <- c("canadian", "aemet", "growth", "tecator")
 k_vrai      <- c(canadian = 4, aemet = 4, growth = 2, tecator = 3)
 preprocess  <- c(

@@ -3,14 +3,14 @@
 # ============================================================================
 # Règle : premier couple (α, ω) où k_opt = k_vrai ; sinon k_opt le plus proche.
 #
-# Usage : source("experiments/01_stabilite/generate_confusion_nselectboot.R")
+# Usage : source("experiments/01_instabilite/generate_confusion_nselectboot.R")
 # Prérequis : nselectboot_*.csv dans results/
 # ============================================================================
 
 library(cluster)
 library(mclust)
 
-results_dir <- "experiments/01_stabilite/results"
+results_dir <- "experiments/01_instabilite/results"
 DATASETS    <- c("canadian", "aemet", "growth", "tecator")
 k_vrai      <- c(canadian = 4, aemet = 4, growth = 2, tecator = 3)
 preprocess  <- c(

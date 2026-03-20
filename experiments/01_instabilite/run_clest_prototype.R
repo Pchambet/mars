@@ -8,7 +8,7 @@
 #
 # Usage :
 #   DATASET <- "canadian"
-#   source("experiments/01_stabilite/run_clest_prototype.R")
+#   source("experiments/01_instabilite/run_clest_prototype.R")
 #
 # ============================================================================
 
@@ -117,7 +117,7 @@ k_opt_clest <- K_RANGE_CLEST[which.max(d_obs)]
 cat(sprintf("\n  k_opt (Clest, sans H0) = %d\n", k_opt_clest))
 if (!is.na(k_vrai)) cat(sprintf("  k_vrai = %d\n", k_vrai))
 
-results_dir <- "experiments/01_stabilite/results"
+results_dir <- "experiments/01_instabilite/results"
 dir.create(results_dir, showWarnings = FALSE, recursive = TRUE)
 write.csv(data.frame(k = K_RANGE_CLEST, t_k = t_obs, d_k = d_obs),
   file.path(results_dir, sprintf("clest_prototype_%s.csv", DATASET)),

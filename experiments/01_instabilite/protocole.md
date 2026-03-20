@@ -21,13 +21,14 @@ Une grille complète en **(\(\alpha\), \(\omega\))** (ici 21×21, pas 0,05) perm
 | **`analyse_nselectboot_simulated.R`** | Heatmaps `figures/nselectboot_heatmap_sim_*.png` (scénarios S1–S4, seed de référence) |
 | **`generate_confusion_nselectboot.R`** | Matrices `confusion_nselectboot_*.csv` (règle : premier couple avec \(k_\text{opt}=k_\text{vrai}\), sinon le plus proche) — **jeux réels uniquement** |
 | **`run_all_complete.R`** | Enchaîne : nselectboot (4 réels **+** volet simulé activé) → heatmaps réels → heatmaps simulés → confusion |
-| **`rapport_stabilite.tex`** | Rapport PDF (titre historique ; contenu = instabilité / nselectboot). Compilation : `make` |
+| **`run_simulated_instabilite_only.R`** | **Simulé seulement** : nselectboot + heatmaps. **Par défaut** : mode rapide (grille 6×6, `B=60`, ~15–25 min). **`--full`** : 21×21 et `B=150` comme les jeux réels (très long). |
+| **`rapport_instabilite.tex`** | Rapport PDF **d’instabilité** (exp. 1). Compilation : `make` dans ce dossier |
 
 ### Volet simulé (complément contrôlé)
 
 - **Objectif** : sous **\(k\)** et labels connus, évaluer le comportement de nselectboot avec le **même** pipeline (lissage, FPCA, distances) que sur les vraies données — **sans remplacer** l’évaluation empirique sur les 4 jeux réels.
 - **Activation** : dans `run_all_nselectboot.R`, définir avant `source` : `RUN_NSELECTBOOT_SIMULATED <- TRUE`. Par défaut le volet simulé est **désactivé** pour limiter le coût CPU ; `run_all_complete.R` l’**active** automatiquement.
-- **Paramètres** : `SEEDS_SIM` (défaut `1L` ; pour alignement complet avec le benchmark exp. 3 : `1:50`), `P_Z_SIM` (défaut 20), `REFERENCE_SEED` pour les CSV « référence » heatmaps (défaut 42). Voir `results_simulated/README.md`.
+- **Paramètres** : `SEEDS_SIM` (défaut `1L` ; pour alignement complet avec le benchmark exp. 3 : `1:50`), `P_Z_SIM` (défaut 20), `REFERENCE_SEED` pour les CSV « référence » heatmaps (**défaut = premier élément de `SEEDS_SIM`**, pas le seed 42). Voir `results_simulated/README.md`.
 - **Limites** : le générateur Cas2_deriv n’est pas le « monde réel » ; les conclusions sur la méthode restent **conditionnelles** à ce modèle. Toujours présenter les résultats réels en parallèle dans le rapport.
 
 ## Ancien protocole « stabilité » (hors pipeline)
@@ -36,9 +37,11 @@ Un prototype ad hoc (bootstrap + ARI sur sous-échantillon 80 %) **sans article 
 
 ## Paramètres modifiables
 
-Dans **`run_all_nselectboot.R`** : `B_NSELECT`, `ALPHAS_NB`, `OMEGAS_NB`, `K_RANGE`.
+Dans **`run_all_nselectboot.R`** : `B_NSELECT`, `ALPHAS_NB`, `OMEGAS_NB`, `K_RANGE` — **référence commune** pour les quatre jeux réels et, si activé, pour le **volet simulé** (mêmes valeurs re-verrouillées avant `run_nselectboot_simulated.R`).
 
-Pour le **volet simulé** (`run_nselectboot_simulated.R`) : `SEEDS_SIM` (défaut `1L` ; alignement benchmark exp. 3 : `1:50`), `P_Z_SIM`, `REFERENCE_SEED`. **Pilot / débogage** : réduire temporairement la grille en redéfinissant `ALPHAS_NB` et `OMEGAS_NB` avant `source()` (le coût est quasi proportionnel au nombre de couples \((\alpha,\omega)\) × `nselectboot`).
+Pour le **volet simulé** seuls varient en principe : `SEEDS_SIM` (défaut `1L` ; benchmark exp. 3 : `1:50`), `P_Z_SIM`, générateur Cas2\_deriv (`NC_SIM`, `DELTA_SIM`, etc., alignés exp. 3).
+
+**Parité stricte nselectboot (recommandée pour comparer au réel)** : \(B=150\), grille \(21\times21\) avec pas \(0{,}05\) sur \(\alpha\) et \(\omega\), `K_RANGE = 2:6`. Le script impose ces valeurs par défaut et **refuse** une autre grille sauf **`NSELECTBOOT_SIM_RELAXED <- TRUE`** (débogage uniquement).
 
 ## Références
 

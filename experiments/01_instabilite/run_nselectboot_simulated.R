@@ -5,14 +5,18 @@
 # Complément contrôlé : k_vrai et labels connus (Cas2_deriv).
 # N’altère pas les scripts ni les sorties de experiments/03_simulated_hybride/.
 #
-# Paramètres (optionnels, avant source) :
-#   B_NSELECT, ALPHAS_NB, OMEGAS_NB, K_RANGE — identiques à run_nselectboot.R
+# Paramètres nselectboot — PARITÉ avec les 4 jeux réels (run_nselectboot.R) :
+#   B_NSELECT = 150, ALPHAS_NB = OMEGAS_NB = seq(0, 1, by = 0.05) [21×21], K_RANGE = 2:6
+#   Toute autre grille / B doit être explicitement levée avec NSELECTBOOT_SIM_RELAXED <- TRUE
+#   (usage réservé au débogage — pas comparable aux résultats réels).
+#
+# Autres paramètres :
 #   P_Z_SIM — défaut 20 (comme benchmark exp. 3)
-#   SEEDS_SIM — défaut 1:10 (pilot) ; pour alignement complet exp. 3 : SEEDS_SIM <- 1:50
-#   REFERENCE_SEED — défaut 42 ; sauvegarde nselectboot_simulated_S*_seed42.csv pour heatmaps
+#   SEEDS_SIM — défaut 1L ; alignement exp. 3 complet : SEEDS_SIM <- 1:50
+#   REFERENCE_SEED — défaut = premier élément de SEEDS_SIM (CSV référence pour heatmaps)
 #
 # Usage : depuis la racine du dépôt
-#   source("experiments/01_stabilite/run_nselectboot_simulated.R")
+#   source("experiments/01_instabilite/run_nselectboot_simulated.R")
 #
 # ============================================================================
 
@@ -20,14 +24,37 @@ library(cluster)
 library(mclust)
 library(fpc)
 
-if (!exists("B_NSELECT")) B_NSELECT <- 150
+if (!exists("B_NSELECT")) B_NSELECT <- 150L
 if (!exists("ALPHAS_NB")) ALPHAS_NB <- seq(0, 1, by = 0.05)
 if (!exists("OMEGAS_NB")) OMEGAS_NB <- seq(0, 1, by = 0.05)
 if (!exists("K_RANGE")) K_RANGE <- 2:6
 if (!exists("P_Z_SIM")) P_Z_SIM <- 20L
-# Par défaut : 1 seed (rapide à documenter) ; alignement exp. 3 complet : SEEDS_SIM <- 1:50
+# Par défaut : 1 seed ; alignement exp. 3 complet : SEEDS_SIM <- 1:50
 if (!exists("SEEDS_SIM")) SEEDS_SIM <- 1L
-if (!exists("REFERENCE_SEED")) REFERENCE_SEED <- 42L
+if (!exists("REFERENCE_SEED")) REFERENCE_SEED <- as.integer(SEEDS_SIM[1L])
+
+# --- Contrôle : mêmes paramètres nselectboot que run_nselectboot.R (comparaison avec données réelles) ---
+if (!exists("NSELECTBOOT_SIM_RELAXED")) NSELECTBOOT_SIM_RELAXED <- FALSE
+.ref_alph_omega <- seq(0, 1, by = 0.05)
+.ref_krange <- 2:6
+if (!isTRUE(NSELECTBOOT_SIM_RELAXED)) {
+  if (length(B_NSELECT) != 1L || as.integer(B_NSELECT) != 150L) {
+    stop("run_nselectboot_simulated : B_NSELECT doit être 150 (identique aux 4 jeux réels). ",
+         "Débogage uniquement : NSELECTBOOT_SIM_RELAXED <- TRUE avant source().")
+  }
+  if (length(ALPHAS_NB) != 21L || length(OMEGAS_NB) != 21L) {
+    stop("run_nselectboot_simulated : la grille (α,ω) doit être 21×21 (seq(0,1,0.05)). ",
+         "Débogage : NSELECTBOOT_SIM_RELAXED <- TRUE.")
+  }
+  if (!isTRUE(all.equal(as.numeric(ALPHAS_NB), as.numeric(.ref_alph_omega))) ||
+      !isTRUE(all.equal(as.numeric(OMEGAS_NB), as.numeric(.ref_alph_omega)))) {
+    stop("run_nselectboot_simulated : ALPHAS_NB et OMEGAS_NB doivent être seq(0, 1, by = 0.05). ",
+         "Débogage : NSELECTBOOT_SIM_RELAXED <- TRUE.")
+  }
+  if (!isTRUE(all.equal(as.integer(K_RANGE), as.integer(.ref_krange)))) {
+    stop("run_nselectboot_simulated : K_RANGE doit être 2:6. Débogage : NSELECTBOOT_SIM_RELAXED <- TRUE.")
+  }
+}
 
 scenario_grid <- list(
   S1 = c(1.0, 1.0, 1.0),
@@ -48,7 +75,7 @@ quiet_source <- function(path) {
   source(path, local = FALSE)
 }
 
-results_dir <- "experiments/01_stabilite/results_simulated"
+results_dir <- "experiments/01_instabilite/results_simulated"
 dir.create(results_dir, showWarnings = FALSE, recursive = TRUE)
 
 cat("\n")
@@ -56,7 +83,11 @@ cat("═════════════════════════
 cat("  EXPÉRIENCE 01 — NSELECTBOOT (Fang-Wang) — DONNÉES SIMULÉES (exp. 3)\n")
 cat("══════════════════════════════════════════════════════════════════════\n\n")
 cat(sprintf("  B = %d, k ∈ {%s}\n", B_NSELECT, paste(K_RANGE, collapse = ",")))
-cat(sprintf("  Grille (α, ω) : %d × %d points\n", length(ALPHAS_NB), length(OMEGAS_NB)))
+cat(sprintf("  Grille (α, ω) : %d × %d points (identique run_nselectboot.R / 4 jeux réels)\n",
+            length(ALPHAS_NB), length(OMEGAS_NB)))
+if (isTRUE(NSELECTBOOT_SIM_RELAXED)) {
+  cat("  *** NSELECTBOOT_SIM_RELAXED = TRUE : grille/B comparables aux jeux réels ? NON ***\n")
+}
 cat(sprintf("  P_Z_SIM = %d | seeds = {%s...} (n=%d)\n", P_Z_SIM, SEEDS_SIM[1], length(SEEDS_SIM)))
 cat(sprintf("  Scénarios : %s\n\n", paste(names(scenario_grid), collapse = ", ")))
 
@@ -93,8 +124,9 @@ for (sc_name in names(scenario_grid)) {
     grille_nb$stabk <- NA
 
     n_grid <- nrow(grille_nb)
+    prog_step <- max(1L, as.integer(ceiling(n_grid / 15)))  # ~15 lignes de progression par scénario
     for (idx in seq_len(n_grid)) {
-      if (idx %% 100L == 1L || idx == n_grid) {
+      if (idx == 1L || idx == n_grid || (idx %% prog_step == 0L)) {
         cat(sprintf("    grille nselectboot %d / %d\n", idx, n_grid))
       }
       a <- grille_nb$alpha[idx]

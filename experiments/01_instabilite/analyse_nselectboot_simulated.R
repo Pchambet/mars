@@ -3,16 +3,14 @@
 # ============================================================================
 #
 # Prérequis : run_nselectboot_simulated.R
-#   Fichiers : nselectboot_simulated_S*_seed<REFERENCE_SEED>.csv dans results_simulated/
+#   Fichiers : nselectboot_simulated_S*_seed*.csv (tous les seeds présents après le run)
 #
-# Usage : source("experiments/01_stabilite/analyse_nselectboot_simulated.R")
+# Usage : source("experiments/01_instabilite/analyse_nselectboot_simulated.R")
 #
 # ============================================================================
 
-results_dir <- "experiments/01_stabilite/results_simulated"
-fig_dir     <- "experiments/01_stabilite/figures"
-
-if (!exists("REFERENCE_SEED")) REFERENCE_SEED <- 42L
+results_dir <- "experiments/01_instabilite/results_simulated"
+fig_dir     <- "experiments/01_instabilite/figures"
 
 dir.create(fig_dir, showWarnings = FALSE, recursive = TRUE)
 
@@ -27,13 +25,14 @@ parse_stabk <- function(s) {
   if (length(v) >= 6) v[2:6] else rep(NA, 5)
 }
 
-pattern <- sprintf("^nselectboot_simulated_S[0-9]+_seed%d\\.csv$", REFERENCE_SEED)
-files <- list.files(results_dir, pattern = pattern, full.names = TRUE)
+files <- list.files(results_dir,
+                    pattern = "^nselectboot_simulated_S[0-9]+_seed[0-9]+\\.csv$",
+                    full.names = TRUE)
 
 if (length(files) == 0) {
-  cat(sprintf("  [SKIP] Aucun fichier référence (*_seed%d.csv) dans %s\n",
-              REFERENCE_SEED, results_dir))
-  cat("  Lancez d’abord run_nselectboot_simulated.R (avec ce seed inclus).\n\n")
+  cat(sprintf("  [SKIP] Aucun fichier nselectboot_simulated_S*_seed*.csv dans %s\n",
+              results_dir))
+  cat("  Lancez d’abord run_nselectboot_simulated.R.\n\n")
 } else {
   for (f in files) {
     base <- tools::file_path_sans_ext(basename(f))

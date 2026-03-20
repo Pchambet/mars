@@ -36,7 +36,7 @@ Les **dérivées sont systématiquement informatives** lorsqu’on **évalue** a
 
 1. **Abstract vs tableau** : L'abstract parle de « α > 0.6 optimal » sans préciser « ARI-optimal ». Risque de confusion (le pipeline utilise silhouette-optimal).
 2. **α « ARI-optimal »** : toute mention dans le rapport doit être clairement séparée du protocole opérationnel (pas utilisée pour choisir les paramètres dans le code).
-3. **Expérience 01 (stabilité)** : La stabilité sélectionne-t-elle des (α, ω) plus proches de l'ARI-optimal que la silhouette ? → En cours d'analyse.
+3. **Expérience 01 (instabilité / nselectboot)** : Le critère Fang–Wang sélectionne-t-il des paramètres pertinents par rapport à l'ARI ? Complément simulé sous `Cas2_deriv`. → À documenter au fil des runs.
 4. **Données SHOM** : Application non labellisée prévue — pas de vérité terrain pour valider.
 
 ## 4. Impasses logiques identifiées
@@ -49,7 +49,7 @@ Les **dérivées sont systématiquement informatives** lorsqu’on **évalue** a
 
 - **Pipeline** : `src/main.R` → 00_preprocess → 01_lissage → 02_fpca → 03_distances → 04_clustering → 05_visualisation  
   Chaîne optionnelle hybride : `02b_pca_hybride_reconstruction.R` → `03b_distances_noyaux_hybrides.R` (exp. simulée `experiments/03_simulated_hybride/`).
-- **Expériences** : `experiments/01_stabilite/` (stabilité, nselectboot), `experiments/02_vote_criteres/`, etc.
+- **Expériences** : `experiments/01_instabilite/` (instabilité / nselectboot, exp. 01), `experiments/02_vote_criteres/`, etc.
 - **Rapports** : `docs/rapport_synthese.tex` (monolithique, ~1120 lignes)
 - **Compilation** : `make all` (depuis la racine) ou `make -C docs` pour LaTeX seul
 

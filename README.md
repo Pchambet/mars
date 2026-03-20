@@ -42,7 +42,7 @@ figures/
 └── tecator/               8 figures
 
 experiments/               Perspectives de recherche (rapport § 8)
-├── 01_stabilite/         Sélection par stabilité
+├── 01_instabilite/       Exp. 01 — instabilité bootstrap (Fang et Wang) / nselectboot
 ├── 02_vote_criteres/      Vote entre critères
 ├── 03_optimisation_bayesienne/
 ├── 04_meta_calibration/

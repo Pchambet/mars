@@ -3,14 +3,14 @@
 # ============================================================================
 #
 # Usage (depuis la racine du projet) :
-#   source("experiments/01_stabilite/analyse_stabilite.R")
+#   source("experiments/01_instabilite/analyse_stabilite.R")
 #
 # Prérequis : avoir exécuté run_all_stability.R (4 fichiers CSV dans results/)
 #
 # ============================================================================
 
-results_dir <- "experiments/01_stabilite/results"
-fig_dir     <- "experiments/01_stabilite/figures"
+results_dir <- "experiments/01_instabilite/results"
+fig_dir     <- "experiments/01_instabilite/figures"
 DATASETS    <- c("canadian", "aemet", "growth", "tecator")
 
 dir.create(fig_dir, showWarnings = FALSE, recursive = TRUE)
@@ -154,5 +154,5 @@ for (d in DATASETS) {
 
 cat("\n")
 cat("══════════════════════════════════════════════════════════════════════\n")
-cat("  Analyse terminée. Figures dans experiments/01_stabilite/figures/\n")
+cat("  Analyse terminée. Figures dans experiments/01_instabilite/figures/\n")
 cat("══════════════════════════════════════════════════════════════════════\n\n")

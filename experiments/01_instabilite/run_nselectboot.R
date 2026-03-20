@@ -8,7 +8,7 @@
 #
 # Usage :
 #   DATASET <- "canadian"
-#   source("experiments/01_stabilite/run_nselectboot.R")
+#   source("experiments/01_instabilite/run_nselectboot.R")
 #
 # ============================================================================
 
@@ -47,7 +47,7 @@ n <- ncol(Y_brut)
 labels_vrai <- if (exists("regions")) as.integer(regions) else NULL
 k_vrai <- if (!is.null(labels_vrai)) length(unique(labels_vrai)) else NA
 
-results_dir <- "experiments/01_stabilite/results"
+results_dir <- "experiments/01_instabilite/results"
 dir.create(results_dir, showWarnings = FALSE, recursive = TRUE)
 
 # Grille (α, ω) pour tester
