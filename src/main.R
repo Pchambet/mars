@@ -17,7 +17,7 @@
 #   01. Lissage       → X̂_i(t) dans L²  (B-splines + GCV)
 #   02. FPCA          → scores ξ_ik      (choix K par variance cumulée)
 #   03. Distances     → D0, D1, Dp, Ds, Dw, DK
-#   04. Clustering    → Stratégies A, B, C + baselines → ARI + silhouette
+#   04. Clustering    → A, B, C + baselines + chaîne HFV (02b→03b) + DK reconstruit
 #   05. Visualisation → figures dans figures/<dataset>/
 #
 # ============================================================================

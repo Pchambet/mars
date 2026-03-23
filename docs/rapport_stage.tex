@@ -1,0 +1,1162 @@
+\documentclass[11pt,a4paper]{article}
+
+% ─── Encodage et langue ───
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+
+% ─── Maths ───
+\usepackage{amsmath,amssymb}
+
+% ─── Figures ───
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{float}
+\graphicspath{{../figures/}{../experiments/01_instabilite/figures/}}
+
+% ─── Schémas TikZ ───
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,fit,backgrounds,calc,decorations.pathreplacing}
+
+% ─── Couleurs sémantiques ───
+\definecolor{func}{HTML}{2166AC}
+\definecolor{vect}{HTML}{B2182B}
+\definecolor{mix}{HTML}{4DAF4A}
+\definecolor{gris}{HTML}{666666}
+
+% ─── Mise en page ───
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, linkcolor=blue!60!black, urlcolor=blue!70!black, citecolor=blue!60!black}
+\usepackage{fancyhdr}
+\usepackage{framed}
+
+% ─── En-tête ───
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\textsc{Rapport de projet long}}
+\fancyhead[R]{\small\textsc{Mars 2026}}
+\fancyfoot[C]{\thepage}
+
+% ─── Commandes ───
+\newcommand{\Dw}{D_w}
+\newcommand{\DK}{D_K}
+\newcommand{\Dp}{D_p}
+\newcommand{\Ltwo}{L^2(\mathcal{T})}
+
+% Boîte fil rouge (règles scientifiques / rédactionnelles)
+\newenvironment{filrouge}{%
+  \def\FrameCommand{\fboxsep=8pt \fcolorbox{black!50}{yellow!10}}%
+  \MakeFramed{\advance\hsize-\width \FrameRestore}%
+  \noindent\ignorespaces
+}{\endMakeFramed}
+
+\title{%
+  \vspace{-0.5cm}
+  \textbf{Rapport de projet long}\\[0.3em]
+  \small\textit{(Master TRIED)}\\[0.4em]
+  \large ACP hybride et méthode des noyaux pour données mixtes\\
+  fonctionnelles et vectorielles
+}
+\author{Pierre Chambet}
+\date{Mars 2026}
+
+\begin{document}
+\maketitle
+\thispagestyle{fancy}
+
+\begin{abstract}
+\noindent
+\textbf{Contexte.}
+Ce mémoire conclut le \textbf{projet long} du \textbf{Master TRIED}. Il s'intéresse
+au \textbf{regroupement} de données (classification non supervisée) lorsque chaque
+individu combine une partie \textbf{fonctionnelle} (une courbe) et une partie
+\textbf{vectorielle} (un vecteur de covariables). La question est de savoir comment
+utiliser \textbf{ensemble} ces deux types d'information pour former des groupes
+cohérents, plutôt que de les traiter à part.
+
+\end{abstract}
+
+\vspace{0.75em}
+\tableofcontents
+\newpage
+
+% ---------------------------------------------------------------------------
+\section{Chapitre 1 --- Introduction et formulation du problème}
+% ---------------------------------------------------------------------------
+
+\subsection{Contexte océanographique et acoustique}
+En océanographie, une grandeur utile pour l'acoustique sous-marine est la
+\emph{célérité} du son dans l'eau, obtenue à partir des champs physiques (par
+exemple température, salinité) via une équation d'état. On peut alors s'intéresser
+à des \emph{profils verticaux} de célérité, tout en disposant en parallèle
+d'informations vectorielles (localisation, indices résumés, etc.). Les données
+à traiter sont donc à la fois \textbf{fonctionnelles} (la courbe) et
+\textbf{vectorielles} (le bloc de variables). L'enjeu du projet long est
+d'étudier comment \textbf{regrouper} de tels individus \textbf{mixtes} avec des
+méthodes adaptées, plutôt que de séparer artificiellement les deux types
+d'information.
+
+\subsection{Formulation statistique~: individu mixte \texorpdfstring{$(X,Z)$}{X,Z}}
+On modélise chaque individu par un couple
+\[
+  (X,Z),\qquad X\in \mathbb{H}=\Ltwo,\qquad Z\in\mathbb{R}^p,
+\]
+où $X$ est une fonction observée sur un domaine $\mathcal{T}\subset\mathbb{R}$
+(muni de la mesure usuelle pour définir l'espace de Hilbert $\mathbb{H}$), et
+$Z$ est un vecteur de covariables dans $\mathbb{R}^p$. Un exemple possible
+dans le cadre océanographique est un profil de célérité pour $X$ et des
+variables résumées pour $Z$~; le reste du mémoire reste volontairement
+\emph{général} pour s'attacher au problème statistique (coupler fonctionnel et
+vecteur), indépendamment du détail d'une application.
+
+Le point important est que $X$ et $Z$ ne jouent pas le même rôle~: toute
+information portée par $Z$ n'est pas réduite au graphe $t\mapsto X(t)$, et
+inversement la forme de la courbe ne se lit pas entièrement dans $Z$.
+
+\subsection{Deux mondes, une distance à construire}
+Du point de vue mathématique, la difficulté centrale est que la structure
+d'$\mathbb{H}$ (produit scalaire, distance $L^2$, possibilité de dériver pour
+capturer la stratification) et la structure euclidienne de $\mathbb{R}^p$ ne
+sont pas directement comparables. On ne dispose pas d'un espace produit canonique
+où une norme unique agrégerait sans arbitrage l'écart fonctionnel et l'écart
+vectoriel~: toute métrique sur le couple $(X,Z)$ est une \emph{construction},
+paramétrée par des choix de poids, de normalisation, de filtrage par rapport à
+la dérivée, ou par passage par des représentations intermédiaires (scores,
+noyaux). La question «~comment faire coexister le continu et le discret~?~» est
+donc le cœur du projet long~: il s'agit de définir des mesures de similarité
+qui respectent à la fois la régularité fonctionnelle et la géométrie vectorielle,
+sans fusion naïve qui laisserait l'une des modalités dominer l'autre par la
+seule taille des composantes ou l'échelle de discrétisation.
+
+\subsection{Proposition de stage et deux familles d'idées}
+La proposition de stage (projet long) distingue deux familles d'approches, qu'on
+peut résumer sans entrer tout de suite dans le détail des notations.
+
+La première idée est une \textbf{réduction}~: on transforme la partie
+fonctionnelle en un nombre fini de coefficients (lissage, bases, scores de type
+FPCA), puis on applique des méthodes classiques sur ces nombres, en les
+concaténant si besoin avec le vecteur~$Z$.
+
+La seconde idée est de définir des \textbf{distances} (ou similarités) qui
+mélangent directement la partie fonctionnelle et la partie vectorielle, par
+exemple une distance pondérée du type
+\[
+  D_\omega(X_i,X_j,Z_i,Z_j)
+  = \sqrt{\omega\, D_f(X_i,X_j)^2 + (1-\omega)\, D_s(Z_i,Z_j)^2},
+  \qquad \omega\in[0,1],
+\]
+où $D_f$ compare les fonctions ou leurs dérivées dans $\mathbb{H}$ et $D_s$ est
+la distance euclidienne sur $\mathbb{R}^p$, ainsi que des constructions de type
+noyau produit sur $(X,Z)$ (Ferreira \& de Carvalho, 2014), comme imposé dans le
+cadre du stage. On décline ces principes en plusieurs stratégies (notées A,
+B et~C dans la suite), avec des choix différents pour $D_f$, $D_s$ et les
+pondérations, puis une séparation niveau\,/\,forme via un paramètre~$\alpha$
+(structure $D_p(\alpha)$). Quand $D_f$ et $D_s$ ne sont pas sur la même échelle,
+il faut aussi normaliser avant de fixer~$\omega$, sinon la pondération ne veut
+pas dire grand-chose.
+
+En parallèle de ces distances de \emph{surface}, nous verrons également la
+théorie et la pratique d'une \textbf{vraie ACP hybride} pour compléter ces
+familles d'idées.
+
+\subsection{Évolution du stage et périmètre empirique}
+Au départ, le stage prévoyait une démarche en deux temps~: d'abord mettre au
+point et étudier toute la partie distances, stratégies et ACP hybride~; ensuite
+\textbf{appliquer} cette boîte à outils à des données concrètes de type
+\textbf{SHOM} (Service hydrographique et océanographique de la Marine). Faute de
+temps, la deuxième phase --- une étude poussée sur les données SHOM elles-mêmes
+--- n'a pas été menée à bout.
+
+Ce mémoire présente donc le travail méthodologique et les expériences que j'ai
+pu mener jusqu'au bout. Il ne se termine \textbf{pas} par une étude empirique
+détaillée sur les jeux SHOM. Pour pouvoir tout de même comparer les approches
+lorsqu'une vérité de groupe existe, j'ai complété avec des \textbf{jeux publics
+étiquetés} et un banc simulé. Dans ce cadre, les réglages du partitionnement
+restent basés sur des critères \emph{sans} étiquettes (par exemple la
+silhouette), et l'ARI n'intervient que pour juger \emph{après coup} une partition
+lorsque des labels sont disponibles.
+
+% ---------------------------------------------------------------------------
+\section{Chapitre 2 --- Architectures de distances et hybridation de surface}
+% ---------------------------------------------------------------------------
+
+\subsection{Lien avec la proposition de stage et chaîne de calcul}
+Les constructions ci-dessous répondent au programme du projet long~: combiner
+une composante fonctionnelle (profils lissés $X_i$) et un vecteur
+$Z_i\in\mathbb{R}^p$. En pratique, les courbes sont d'abord lissées (splines,
+représentation fonctionnelle discrète sur grille fine), puis une analyse en
+composantes principales fonctionnelles (FPCA) fournit des scores pour la
+stratégie~A et des évaluations $X_i(t)$, $X_i'(t)$ pour les
+intégrales définissant $D_0$ et $D_1$. Cette réduction fonctionnelle est le
+passage obligé annoncé dans le sujet lorsque l'on suit la voie «~discrétisation
+puis méthodes euclidiennes~».
+
+\subsection{Briques de niveau $0$~: $D_0$, $D_1$, $D_s$}
+On note $\mathcal{T}$ le domaine de la profondeur (ou du temps) et
+$X_i,X_j\in \Ltwo$ les profils lissés.
+
+\paragraph{Distance de niveau $D_0$.}
+La distance $L^2$ entre courbes mesure l'écart global des profils~:
+\begin{equation}
+  D_0(i,j) = \sqrt{\int_{\mathcal{T}}
+    \bigl[X_i(t)-X_j(t)\bigr]^2\,\mathrm{d}t } \, .
+\end{equation}
+Elle est sensible au décalage vertical entre trajectoires et moins à la seule
+différence de forme lorsque les niveaux restent proches.
+
+\paragraph{Distance de forme $D_1$.}
+La dérivée première $X_i'$ encode la dynamique de stratification (taux de
+variation du profil). On pose
+\begin{equation}
+  D_1(i,j) = \sqrt{\int_{\mathcal{T}}
+    \bigl[X_i'(t)-X_j'(t)\bigr]^2\,\mathrm{d}t } \, .
+\end{equation}
+$D_1$ privilégie la proximité des formes au sens des gradients, au prix d'une
+sensibilité accrue au bruit d'estimation si le lissage est insuffisant.
+
+\paragraph{Distance vectorielle $D_s$.}
+Les covariables $Z_i$ sont standardisées variable par variable (moyenne nulle,
+variance unitaire), notées $Z_i^{\mathrm{std}}$. La distance euclidienne
+associée est
+\begin{equation}
+  D_s(i,j) = \bigl\| Z_i^{\mathrm{std}} - Z_j^{\mathrm{std}} \bigr\|_2 \, .
+\end{equation}
+Elle ne dépend pas des courbes~; inversement, $D_0$ et $D_1$ ignorent $Z$.
+Les trois briques sont donc \emph{complémentaires} mais prises isolément
+\emph{non suffisantes} pour représenter la similarité du couple $(X,Z)$.
+
+\subsection{Compromis fonctionnel $\Dp(\alpha)$ (niveau $1$)}
+Les ordres de grandeur de $D_0$ et $D_1$ diffèrent généralement fortement (les
+écarts de niveau peuvent dominer numériquement les écarts de dérivée). Avant
+toute combinaison, on normalise par les maxima observés sur l'échantillon~:
+\begin{equation}
+  \tilde{D}_0 = \frac{D_0}{\max D_0}\,,\qquad
+  \tilde{D}_1 = \frac{D_1}{\max D_1}\,,
+\end{equation}
+de sorte que $\tilde{D}_0$ et $\tilde{D}_1$ sont comparables (typiquement dans
+$[0,1]$ hors diagonale). Le compromis de Minkowski pondéré entre niveau et
+forme s'écrit
+\begin{equation}
+  \label{eq:Dp}
+  \Dp(\alpha) = \sqrt{(1-\alpha)\,\tilde{D}_0^{\,2} + \alpha\,\tilde{D}_1^{\,2}}\,,
+  \qquad \alpha\in[0,1] \, .
+\end{equation}
+Pour $\alpha=0$ (resp.\ $\alpha=1$), on retrouve $\tilde{D}_0$ (resp.\
+$\tilde{D}_1$) à une normalisation près. Le paramètre $\alpha$ règle
+exclusivement le compromis \emph{intra-fonctionnel} entre amplitude et
+dynamique~; il ne mélange pas encore le fonctionnel avec le vectoriel.
+
+\subsection{Pondération fonctionnel\,/\,vectorielle~: $\Dw(\alpha,\omega)$
+(niveau $2$)}
+On normalise également la partie vectorielle par le maximum empirique,
+$\tilde{D}_s = D_s / \max D_s$, pour aligner l'échelle de $D_s$ sur celle des
+distances fonctionnelles déjà calibrées. La distance mixte pondérée utilisée
+dans la stratégie~B est
+\begin{equation}
+  \label{eq:Dw}
+  \Dw(\alpha,\omega)
+  = \sqrt{\omega\,\Dp(\alpha)^2 + (1-\omega)\,\tilde{D}_s^{\,2}}\,,
+  \qquad \omega\in[0,1] \, .
+\end{equation}
+Ici $\alpha$ intervient dans $\Dp(\alpha)$ (choix niveau\,/\,forme dans le
+bloc fonctionnel), tandis que $\omega$ pondère explicitement la contribution
+de la partie fonctionnelle $\Dp(\alpha)$ par rapport à la partie vectorielle
+$\tilde{D}_s$. Le symbole $\omega$ est réservé à cette distance $\Dw$~; au chapitre~3, le
+coefficient $r$ du produit scalaire hybride~\eqref{eq:prodscalaire_hybride} joue
+un tout autre rôle (pondération dans un produit scalaire théorique, pas dans
+une matrice de distances PAM).
+
+Sous les normalisations adoptées, $\Dw(\alpha,\omega)$ est une métrique
+(positivité, symétrie, inégalité triangulaire~: structure de Minkowski pondérée
+sur les deux composantes scalaires $\Dp(\alpha)$ et $\tilde{D}_s$)~; elle peut
+donc alimenter un partitionnement de type PAM (k-médoïdes) sur la matrice de
+dissimilarités complète.
+
+\subsection{Noyaux produit et distance $\DK(\alpha)$ (stratégie~C)}
+Pour la stratégie~C, on ne combine pas les distances comme dans~\eqref{eq:Dw}~:
+on suit la construction de Ferreira \& de Carvalho (2014), imposée par le
+stage. L'idée est de passer par des \textbf{similarités} (nombres plus grands
+quand les individus sont proches) construites à partir de $\Dp(\alpha)$ et de
+$D_s$, de les multiplier, puis d'en déduire une distance entre individus pour le
+PAM.
+
+On pose
+\begin{align}
+  K_f(i,j) &= \exp\!\left(-\frac{\Dp(\alpha)_{ij}^2}{2\sigma_f^2}\right)\,, \\
+  K_s(i,j) &= \exp\!\left(-\frac{D_s(i,j)^2}{2\sigma_s^2}\right)\,,
+\end{align}
+avec $\sigma_f$ et $\sigma_s$ fixés par des médianes sur les distances non nulles.
+Le score global est le produit $K(i,j)=K_f(i,j)\,K_s(i,j)$. La matrice de
+distances utilisée par la suite est
+\begin{equation}
+  \DK(i,j) = \sqrt{K(i,i)+K(j,j)-2K(i,j)}\,.
+\end{equation}
+
+\paragraph{Pourquoi cette forme (gaussien, $\sigma$, médiane).}
+La forme $\exp(-d^2/(2\sigma^2))$ est le choix classique pour transformer une
+distance $d$ en une similarité lisse et positive~: plus $d$ est petit, plus la
+similarité est forte; plus $d$ est grand, plus elle faiblit. Le paramètre
+$\sigma$ règle la \emph{vitesse} de cette décroissance~: un $\sigma$ petit
+rend le noyau très sélectif (seules les paires très proches comptent), un
+$\sigma$ grand l'adoucit (beaucoup de paires restent ``moyennement'' proches).
+Ici, deux échelles $\sigma_f$ et $\sigma_s$ sont nécessaires car les distances
+fonctionnelle et vectorielle ne vivent pas sur la même échelle numérique. Plutôt
+que d'ajouter deux réglages à optimiser sur chaque jeu, on fixe une règle
+simple et reproductible~: la \textbf{médiane} des distances non nulles sur
+l'échantillon. Ce choix est très répandu en pratique~: il calibre $\sigma$ sur
+l'ordre de grandeur \emph{typique} des écarts observés, ce qui évite un noyau
+ni trop pointu (tout le monde loin) ni trop plat (tout le monde pareil), sans
+nouvelle grille de recherche.
+
+Par rapport à la stratégie~B, le fonctionnel et le vectoriel sont liés par un
+\emph{produit} de similarités (les deux doivent être grands en même temps), et
+non par une somme pondérée des carrés de distances.
+
+\subsection{Stratégies A, B et C~: même ingrédients, géométries différentes}
+
+\paragraph{Stratégie A (RS-PCA et $k$-means).}
+La FPCA fournit $L$ scores $\xi_{i1},\ldots,\xi_{iL}$ par individu~; le vecteur
+$Z_i$ est standardisé comme pour $D_s$. On forme le vecteur
+$W_i = (\xi_{i1},\ldots,\xi_{iL},Z_{i1}^{\mathrm{std}},\ldots,Z_{ip}^{\mathrm{std}})$
+dans $\mathbb{R}^{L+p}$, puis on centre-réduit chaque colonne de la matrice ainsi
+construite. Le clustering est un $k$-means avec distance euclidienne, soit la
+norme $\|\cdot\|_2$ sur l'espace des $W_i$. Il n'y a pas d'ACP séparée sur $Z$
+dans cette chaîne de référence~: seule la FPCA résume le fonctionnel, le bloc
+$Z$ restant en coordonnées physiques renormalisées. Du point de vue conceptuel,
+c'est une fusion \emph{par concaténation} de coordonnées réduites, suivie d'une
+norme euclidienne unique sur le vecteur agrégé.
+
+\paragraph{Stratégie B (PAM sur $\Dw$).}
+Pour chaque couple $(\alpha,\omega)$ d'une grille discrète ($21\times 21$
+valeurs, pas $0{,}05$ sur $[0,1]$ pour chaque paramètre --- donc le même grain
+que pour l'instabilité bootstrap du chapitre~4 avec $B=150$), on calcule la
+matrice $\Dw(\alpha,\omega)$ et on applique PAM. La géométrie est entièrement
+définie par la dissimilarité~\eqref{eq:Dw}, donc par une combinaison
+\emph{additive} des carrés des contributions fonctionnelle et vectorielle après
+normalisations.
+
+\paragraph{Stratégie C (PAM sur $\DK$).}
+On balaie la même grille en $\alpha$ que pour $\Dp$ (21 valeurs, pas $0{,}05$)~;
+chaque valeur fixe $\Dp(\alpha)$, donc le noyau $K_f$, avec $\sigma_f$ et
+$\sigma_s$ donnés par les médianes. PAM utilise la matrice $\DK(\alpha)$ décrite
+au paragraphe précédent (même logique multiplicative $K_f K_s$, donc autre
+géométrie que la stratégie~B et~\eqref{eq:Dw}).
+
+Aucune de ces trois procédures n'est intrinsèquement «~supérieure~»~: elles
+traduisent des arbitrages géométriques distincts (espace euclidien de scores
+concaténés vs distances sur couples de matrices normalisées vs noyau produit).
+Leur comparaison empirique est reportée au chapitre~5.
+
+\subsection{Architecture à deux niveaux~: vue d'ensemble}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    base/.style={draw, rounded corners=4pt, minimum width=2.5cm, minimum height=0.9cm,
+                 align=center, font=\small\bfseries},
+    fleche/.style={-{Stealth[length=3mm]}, thick},
+    etiq/.style={font=\footnotesize\itshape, text=gris},
+  ]
+  \node[base, fill=func!15, text=func]          (D0) at (0,0)     {$D_0$ \footnotesize niveau};
+  \node[base, fill=func!15, text=func]          (D1) at (3.5,0)   {$D_1$ \footnotesize forme};
+  \node[base, fill=vect!15, text=vect]          (Ds) at (8.5,0)   {$D_s$ \footnotesize vectoriel};
+  \node[base, fill=func!25, text=func]          (Dp) at (1.75,-1.8) {$\Dp(\alpha)$};
+  \node[base, fill=mix!20, text=mix!70!black]   (Dw) at (4.0,-3.6)  {$\Dw(\alpha,\omega)$};
+  \node[base, fill=mix!20, text=mix!70!black]   (DK) at (7.5,-3.6)  {$\DK(\alpha)$};
+
+  \draw[fleche, func!70] (D0) -- (Dp) node[etiq, midway, left=2pt]  {$1{-}\alpha$};
+  \draw[fleche, func!70] (D1) -- (Dp) node[etiq, midway, right=2pt] {$\alpha$};
+  \draw[fleche, func!70] (Dp) -- (Dw) node[etiq, midway, left=2pt]  {$\omega$};
+  \draw[fleche, vect!70] (Ds) -- (Dw) node[etiq, midway, right=2pt] {$1{-}\omega$};
+  \draw[fleche, func!70] (Dp) -- (DK) node[etiq, midway, left=2pt]  {$K_f$};
+  \draw[fleche, vect!70] (Ds) -- (DK) node[etiq, midway, right=2pt] {$K_s$};
+
+  \node[font=\footnotesize\scshape, text=gris] at (-1.5,0)    {Niv.~0};
+  \node[font=\footnotesize\scshape, text=gris] at (-1.5,-1.8) {Niv.~1};
+  \node[font=\footnotesize\scshape, text=gris] at (-1.5,-3.6) {Niv.~2};
+\end{tikzpicture}
+\caption{Architecture hiérarchique des distances.
+\textcolor{func}{Bleu}~= fonctionnel, \textcolor{vect}{rouge}~= vectoriel,
+\textcolor{mix}{vert}~= mixte. Les niveaux 0 et 1 sont purement fonctionnels~;
+le niveau~2 combine les deux sources.}
+\label{fig:archi_distances}
+\end{figure}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lll}
+  \toprule
+  \textbf{Distance} & \textbf{Ce qu'elle voit} & \textbf{Ce qu'elle rate} \\
+  \midrule
+  $D_0$ & Niveau vertical des courbes & Forme / dynamique \\
+  $D_1$ & Forme / vitesse de changement & Niveau vertical \\
+  $D_s$ & Position dans $\mathbb{R}^p$ & Les courbes entièrement \\
+  \bottomrule
+\end{tabular}
+\caption{Trois distances de base ($D_0$, $D_1$, $D_s$)~: elles se complètent et
+aucune ne suffit seule pour résumer le couple $(X,Z)$.}
+\label{tab:bilan_distances}
+\end{table}
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{l p{3.3cm} p{3.4cm} p{4.0cm}}
+  \toprule
+  \textbf{Stratégie} & \textbf{Représentation} &
+  \textbf{Méthode de clustering} & \textbf{Fusion fonctionnel / vectoriel} \\
+  \midrule
+  A (FPCA$+Z$) &
+  Vecteur $W = [\xi_{\text{FPCA}} \mid Z]$ standardisé &
+  $k$-means (distance euclidienne) &
+  Concaténation dans $\mathbb{R}^{L+p}$ \\
+  B ($\Dw$) &
+  Matrice de distances $\Dw(\alpha,\omega)$ &
+  PAM (k-médoïdes) &
+  Somme pondérée $\Dp(\alpha)^2 + \tilde{D}_s^2$ \\
+  C ($\DK$) &
+  Matrice de distances $\DK(\alpha)$ &
+  PAM (k-médoïdes) &
+  Produit de noyaux gaussiens $K_f \cdot K_s$ \\
+  \bottomrule
+\end{tabular}
+\caption{Résumé des trois stratégies~: même ingrédients ($D_0$, $D_1$, $D_s$),
+géométries de fusion différentes.}
+\label{tab:strategies}
+\end{table}
+
+\subsection{Hybridation tardive et absence de covariance croisée}
+Les constructions de ce chapitre partagent une structure commune~: les écarts
+\emph{fonctionnels} ($D_0$, $D_1$, puis $\Dp$) et \emph{vectoriels} ($D_s$)
+sont évalués à partir de représentations obtenues \emph{séparément} (FPCA et
+standardisation de $Z$ dans la stratégie~A~; mêmes ingrédients agrégés au
+niveau des distances pour B et C). La fusion n'intervient qu'\emph{après} ces
+calculs, soit par concaténation de coordonnées puis norme euclidienne (A), soit
+par combinaison algébrique des matrices $\Dp(\alpha)$ et $\tilde{D}_s$
+(B et C). En ce sens, l'hybridation est \emph{tardive}~: elle opère sur des
+dissimilarités ou des coordonnées déjà résumées, et non sur un modèle de
+dépendance conjointe estimé entre le fonctionnel et le vectoriel.
+
+Par construction, aucune de ces approches n'introduit de terme mesurant la
+covariance \emph{croisée} entre directions fonctionnelles et directions dans
+$\mathbb{R}^p$ avant la définition de la métrique finale~: les blocs
+hors-diagonaux d'une matrice de covariance jointe (tel le bloc $V_{yx}$ du
+chapitre suivant) sont absents du calcul de $D_0$, $D_1$, $D_s$, $\Dp$,
+$\Dw$ ou $\DK$. Les stratégies A, B et C peuvent donc capter des similarités
+compatibles avec chaque modalité prise isolément, mais elles ne garantissent
+pas que la structure de liaison statistique entre variations de $X$ et
+variations de $Z$ soit explicitement modélisée au moment où l'on agrège les
+informations. C'est précisément cette limite qui motive l'ACP hybride (HFV)
+développée au chapitre~3, où la covariance croisée entre résumés fonctionnels
+et vectoriels est estimée et diagonalisée avant toute distance de clustering
+sur reconstructions.
+
+% ---------------------------------------------------------------------------
+\section{Chapitre 3 --- ACP hybride fonctionnelle--vectorielle (HFV)}
+% ---------------------------------------------------------------------------
+
+\subsection{Pourquoi une autre géométrie que les distances du chapitre~2~?}
+Les stratégies A, B et C construisent des dissimilarités à partir de résumés
+déjà calculés séparément (FPCA d'un côté, $Z$ de l'autre), puis les combinent
+ou les injectent dans des noyaux. L'ACP hybride (HFV) répond à une question
+différente~: \emph{où} la variabilité commune entre les deux modalités est-elle
+modélisée avant toute distance de clustering~? L'idée est d'estimer une
+\emph{covariance jointe} sur des coordonnées réduites, puis de diagonaliser
+cette matrice pour obtenir des axes qui mélangent explicitement les deux
+blocs. La présentation qui suit enchaîne les étapes dans l'ordre du calcul.
+
+\subsection{Intuition~: espace hybride $\mathbb{H}$}
+En théorie, l'individu est une paire $(Y,X)$ dans un espace de Hilbert
+$\mathbb{H}$ mélangeant une composante fonctionnelle ($L^2$) et une composante
+vectorielle ($\mathbb{R}^p$). On introduit un produit scalaire hybride qui
+additionne la partie continue et la partie discrète, avec un coefficient
+positif calibrant le poids relatif du vectoriel~:
+\begin{equation}
+  \label{eq:prodscalaire_hybride}
+  \langle h_1, h_2 \rangle_{\mathbb{H}}
+  = \langle f_1, f_2 \rangle_{\mathbb{F}}
+  + r\,\langle v_1, v_2 \rangle_{\mathbb{R}^p}\,,
+\end{equation}
+de sorte qu'aucune modalité n'écrase l'autre par la seule échelle de mesure.
+
+\subsection{L'estimation matricielle en trois temps}
+Le modèle en dimension infinie se ramène à un vecteur de dimension finie
+$(L{+}J)$ par individu.
+
+\paragraph{Étape 1 --- réduction séparée.}
+Une FPCA sur les courbes lissées fournit $L$ scores par individu,
+$\eta_{i1},\ldots,\eta_{iL}$, sur les fonctions de base de la FPCA,
+$\phi_1,\ldots,\phi_L$. Le vecteur $Z$ est centré et réduit, puis résumé par une
+ACP classique en $J$ scores
+$\gamma_{i1},\ldots,\gamma_{iJ}$.
+
+\paragraph{Calibration du coefficient $r$.}
+Les échelles de dispersion des blocs $\eta$ et $\gamma$ diffèrent en général~;
+concaténer sans pondération laisserait dominer le bloc de plus forte variance
+empirique. L'intention est la même que celle du ratio d'énergies sur les
+objets fonctionnel et vectoriel \emph{bruts} dans la synthèse du cadre
+$\mathbb{H}$, mais appliquée ici aux scores réduits $(\eta,\gamma)$ une fois
+la FPCA et l'ACP sur $Z$ effectuées. On fixe
+\begin{equation}
+  \label{eq:r_trace}
+  r = \frac{\mathrm{tr}\,\mathrm{Cov}(\eta)}{\mathrm{tr}\,\mathrm{Cov}(\gamma)}\,,
+\end{equation}
+rapport des traces des covariances empiriques des deux blocs \emph{avant} fusion.
+Ce réglage ne doit pas être confondu avec le paramètre $\omega$ du
+chapitre~2, qui pèse les distances $D_p$ et $\tilde{D}_s$ dans
+$\Dw(\alpha,\omega)$~: ici $r$ calibre uniquement la géométrie de l'ACP hybride.
+Il ne s'agit pas d'appliquer deux fois un même paramètre~: le coefficient $r$
+intervient une seule fois dans la définition~\eqref{eq:prodscalaire_hybride},
+et le passage au calcul fini consiste à encoder ce poids en remplaçant les
+scores vectoriels $\gamma_{ij}$ par $\sqrt{r}\,\gamma_{ij}$ dans le vecteur
+concaténé, de sorte qu'une projection euclidienne sur ce vecteur reproduit la
+pondération par $r$ sur la partie vectorielle. Les traces des deux blocs dans
+la covariance du vecteur concaténé sont alors de même ordre.
+
+\paragraph{Étape 2 --- vecteur d'état joint.}
+On pose $\tilde{\gamma}_{ij} = \sqrt{r}\,\gamma_{ij}$ et l'on concatène les
+deux blocs en un seul vecteur de $\mathbb{R}^{L+J}$~:
+\begin{equation}
+  x_i = (\eta_{i1},\ldots,\eta_{iL},\tilde{\gamma}_{i1},\ldots,\tilde{\gamma}_{iJ})\,.
+\end{equation}
+
+\paragraph{Étape 3 --- covariance des coordonnées réduites.}
+On centre les colonnes de la matrice des $x_i$, puis on estime la covariance
+empirique en notant les $x_i$ comme vecteurs colonnes centrés~:
+\begin{equation}
+  V = \frac{1}{n-1}\sum_{i=1}^n x_i x_i^{\top}\,.
+\end{equation}
+Elle admet la partition par blocs fonctionnel / vectoriel~:
+\begin{equation}
+  \label{eq:Vblocs}
+  V = \begin{bmatrix} V_y & V_{yx} \\ V_{xy} & V_x \end{bmatrix}\,,
+\end{equation}
+où $V_y$ et $V_x$ portent la variabilité propre à chaque modalité. Le bloc
+croisé vérifie $V_{yx} = V_{xy}^{\top}$ et mesure la \emph{covariance croisée}
+entre scores fonctionnels et scores vectoriels~: c'est le bloc qui manquait aux
+constructions «~de surface~» du chapitre~2. Tant que $V_{yx}$ n'est pas nul, les
+fluctuations des deux sources ne sont pas traitées comme indépendantes au moment
+de définir la géométrie jointe.
+
+\subsection{Axes principaux et structure des vecteurs propres}
+Les directions de variance maximale sous contrainte de norme~1 sont les
+vecteurs propres de $V$ (théorème spectral)~: pour un axe $m$, la variance
+projetée s'écrit $\langle e_m, V e_m\rangle$. Chaque vecteur propre se décompose
+selon les deux blocs~:
+\begin{equation}
+  e_m = \begin{bmatrix} c_m \\ d_m \end{bmatrix}\,,
+  \qquad c_m\in\mathbb{R}^L\,,\quad d_m\in\mathbb{R}^J\,,
+\end{equation}
+ce qui signifie qu'un axe dominant peut combiner à la fois un motif sur les
+scores FPCA et un motif sur les scores vectoriels --- ce n'est pas une suite
+«~d'abord fonctionnel, puis vectoriel~», mais une \emph{intrication} dans un
+repère orthogonal commun.
+
+\subsection{Scores hybrides et reconstruction}
+Le score de l'individu $i$ sur l'axe $m$ est la coordonnée sur $e_m$, soit la
+projection de $x_i$ sur cet axe~:
+\begin{equation}
+  \rho_{im}
+  = \sum_{h=1}^L \eta_{ih}\,c_{mh}
+  + \sum_{j=1}^J \tilde{\gamma}_{ij}\,d_{mj}
+  = \sum_{h=1}^L \eta_{ih}\,c_{mh}
+  + \sqrt{r}\,\sum_{j=1}^J \gamma_{ij}\,d_{mj}\,.
+\end{equation}
+La partie fonctionnelle de l'axe se lit comme une fonction dans $\Ltwo$ en
+combinant les fonctions de base de la FPCA~:
+\begin{equation}
+  \psi_m(t) = \sum_{h=1}^L c_{mh}\,\phi_h(t)\,.
+\end{equation}
+La partie vectorielle se lit dans $\mathbb{R}^p$ en combinant les directions
+principales de l'ACP sur $Z$ (vecteurs propres unitaires de la covariance
+empirique de $Z$ standardisé), notées $w_1,\ldots,w_J$~:
+\begin{equation}
+  \label{eq:theta_m}
+  \theta_m = \sum_{j=1}^J d_{mj}\,w_j\,.
+\end{equation}
+Ainsi $\rho_{im}$ est bien la somme des contributions fonctionnelle (via les
+$\eta_{ih}$ et $c_{mh}$) et vectorielle (via les $\tilde{\gamma}_{ij}$ et
+$d_{mj}$), et la reconstruction «~lisible~» de l'axe $m$ sépare explicitement
+$\psi_m$ (continu) et $\theta_m$ (discret dans $\mathbb{R}^p$), sans passer par
+un retour mécanique aux $p$ coordonnées brutes de $Z$ si l'on reste dans le
+sous-espace des $J$ premières composantes. Dans la mise en œuvre numérique du
+stage, ce sont surtout les courbes qui sont reconstruites explicitement dans
+$L^2$ à partir des loadings sur les $\phi_h$~; la composante vectorielle se
+déduit des scores $\gamma_{ij}$ et des $d_{mj}$, ou du profil $\theta_m$, plutôt
+qu'un vecteur $Z$ entier réaffiché dans $\mathbb{R}^p$ à chaque étape.
+
+Les courbes reconstruites à partir des composantes hybrides restent dans le
+sous-espace engendré par les $(\phi_h)$, mais les coefficients ne sont
+plus ceux de la seule FPCA initiale~: ils sont \emph{informés} par la structure
+de liaison entre $\eta$ et $\gamma$ contenue dans $V$, en
+particulier dans $V_{yx}$.
+
+\subsection{Synthèse RS-PCA vs HFV et enchaînement des chapitres}
+La stratégie~A (RS-PCA opérationnelle) concatène des coordonnées puis utilise
+une norme euclidienne unique sans passer par une matrice de covariance jointe
+de la forme~\eqref{eq:Vblocs}. La HFV, elle, estime d'abord $V$ (avec les
+blocs croisés), puis diagonalise et reconstruit les courbes dans $L^2$~; on
+peut ensuite calculer une distance de type $\DK$ sur la partie reconstruite et
+le vecteur $Z$, comme au chapitre~2. Le chapitre~4 traite du non-supervisé
+(choix de $k$, critères internes)~; le chapitre~5 confronte ces géométries sur
+le banc simulé.
+
+% ---------------------------------------------------------------------------
+\section{Chapitre 4 --- Non-supervisé~: silhouette, limites, instabilité bootstrap (Fang \& Wang)}
+% ---------------------------------------------------------------------------
+
+\subsection{Jeux de données et objectifs du non-supervisé}
+Les illustrations de ce chapitre et du chapitre~6 portent sur \textbf{trois jeux
+réels} publics et étiquetés (Canadian Weather, Berkeley Growth, Tecator)~: les
+classes servent à \emph{vérifier} les partitions \emph{après} coup, pas à
+calibrer les critères internes. Le chapitre~5 complète par un \textbf{banc
+simulé} (scénarios S1--S4) où le nombre de groupes et le rapport signal\,/\,bruit
+sont contrôlés. Partout, le nombre de clusters $k$ est un objet inconnu en
+non-supervisé~: on le traite explicitement (instabilité bootstrap) alors que
+$\alpha$ et $\omega$ décrivent la géométrie des dissimilarités de surface
+$\Dw(\alpha,\omega)$ du chapitre~2.
+
+\subsection{Données sans étiquettes et impossibilité du réglage par vérité
+terrain}
+Les hyperparamètres du pipeline --- en particulier le nombre de groupes $k$,
+le compromis niveau\,/\,forme $\alpha$ et la pondération fonctionnel\,/\,vectoriel
+$\omega$ intervenant dans $\Dw(\alpha,\omega)$ --- conditionnent à la fois la
+matrice de dissimilarités et la partition produite par le clustering. Lorsque
+l'on dispose d'une partition de référence (jeux étiquetés ou simulation), l'ARI
+ou des critères analogues permettent de \emph{évaluer} \emph{a posteriori} la
+cohérence avec cette référence~; ils ne constituent pas en revanche une fonction
+de perte pour optimiser $(k,\alpha,\omega)$ dans un cadre réellement sans
+étiquettes. Les grilles en $(\alpha,\omega)$, PAM sur $\Dw(\alpha,\omega)$ et
+le diagnostic par instabilité de $k$ présentés ci-dessous visent ainsi les
+\textbf{stratégies A, B et C} du chapitre~2. La chaîne \textbf{HFV} (chapitre~3)
+calibre d'abord le coefficient inter-modalités $r$, puis peut s'enchaîner avec
+une distance de type $\DK$ sur reconstructions~; elle ne repose pas sur le même
+couple $(\alpha,\omega)$ dans $\Dw$ et mobilise d'autres réglages en aval
+(y compris $k$ sur la matrice de distances retenue).
+
+\subsection{Silhouette~: définition et logique de validation interne}
+\label{sec:silhouette}
+Étant donnée une matrice de distances $D$ et une partition
+$\mathcal{C}=\{C_1,\ldots,C_k\}$, la silhouette de l'individu $i$ affecté au
+cluster $C_\ell$ compare la cohésion intra-groupe à la séparation inter-groupes~:
+\begin{equation}
+  s(i) = \frac{b(i)-a(i)}{\max\{a(i),\,b(i)\}}\,,
+\end{equation}
+où $a(i)$ est la distance moyenne de $i$ aux autres points de $C_\ell$ (ou $0$
+si $|C_\ell|=1$) et $b(i)$ la distance moyenne minimale aux points d'un autre
+cluster. La silhouette moyenne $\bar{s}=\frac{1}{n}\sum_i s(i)$ synthétise la
+qualité géométrique de la partition \emph{dans la métrique choisie}. Le protocole
+classique du projet maximise $\bar{s}$ sur une grille de $(\alpha,\omega)$ à
+$k$ fixé, ce qui est cohérent avec une recherche de groupes compacts et bien
+séparés \emph{au sens de $D$}.
+
+\input{generated/paradox_silhouette_ari.tex}
+
+Dans ce mémoire, le non-supervisé du chapitre~4 n'est pas illustré par une carte
+de silhouette sur $(\alpha,\omega)$~: sur la même grille discrète, les figures
+principales sont d'une part le tableau~\ref{tab:paradox_silhouette_ari}
+(évaluation à étiquettes, paradoxe silhouette\,/\,ARI), d'autre part les cartes
+d'instabilité bootstrap (figure~\ref{fig:instab_reels}) pour le choix de $k$.
+
+\subsection{Paradoxe de la silhouette et échec relatif des métriques internes
+pour le sens}
+Le point critique est que $\bar{s}$ juge la \emph{séparation géométrique} des
+groupes induits par $D$, pas leur adéquation à une structure substantive
+extérieure à cette géométrie. Une métrique qui favorise des amas ``ronds'' et
+isolés obtient souvent une silhouette élevée~; une partition alignée sur des
+classes de référence peut au contraire correspondre à des nuages allongés,
+chevauchants ou anisotropes dans l'espace des distances, et donc produire une
+silhouette modeste alors même qu'elle maximise l'ARI. Réciproquement, le couple
+$(\alpha,\omega)$ maximisant $\bar{s}$ peut concentrer l'information sur une
+modalité (par exemple le seul vecteur $Z$) au détriment de la dynamique
+fonctionnelle pertinente pour les labels lorsqu'ils existent.
+
+\medskip
+\noindent
+À $k$ fixé égal au nombre de classes de référence (cadre d'évaluation uniquement),
+le tableau~\ref{tab:paradox_silhouette_ari} compare, sur la stratégie~B et une
+grille $21\times 21$, le couple $(\alpha,\omega)$ retenu par maximisation de la
+silhouette au couple qui \emph{maximiserait} l'ARI sur la même grille --- ce
+second couple est un contrefactuel~: il suppose des étiquettes pour une
+optimisation que le non-supervisé ne peut pas réaliser. L'écart $\Delta\mathrm{ARI}$
+quantifie le coût, au sens de l'ARI, du choix par silhouette. Ce constat ne
+résout pas le problème du réglage sans labels~; il motive à traiter en parallèle
+la question du \emph{nombre} de groupes $k$, sans recourir à l'ARI, par une voie
+distincte (instabilité bootstrap, paragraphes suivants). Les analyses du
+chapitre~5 (simulation) et du chapitre~6 (jeux réels) prolongent cette lecture
+pour d'autres métriques et stratégies.
+
+\subsection{Vers un critère de choix de \texorpdfstring{$k$}{k} sans labels~:
+stabilité sous perturbation}
+Sur le plan \emph{méthodologique}, la question du nombre de groupes $k$ est
+prioritaire en non-supervisé~: sans une plage de $k$ plausible ou une lecture
+de la stabilité des partitions, explorer finement $(\alpha,\omega)$ risque de
+comparer des métriques qui ne répondent pas au même problème de regroupement.
+La silhouette se prête mal, dans ce projet, à calibrer finement $(\alpha,\omega)$
+; le choix du nombre de clusters $k$ est en outre structurant~: sans $k$
+cohérent, toute recherche sur $(\alpha,\omega)$ repose sur une partition mal
+identifiée. Augmenter $k$ tend mécaniquement à raffiner les groupes et peut
+artificiellement modifier $\bar{s}$ sans garantir l'identifiabilité des modes de
+la loi sous-jacente. Une voie complémentaire \emph{sans étiquettes} consiste à
+mesurer la \emph{stabilité} (ou l'\emph{instabilité}) des partitions sous
+ré-échantillonnage~: si de légers changements d'échantillon produisent des
+affectations très variables, le nombre de clusters retenu est suspect~; si les
+partitions sont cohérentes d'un tirage à l'autre, $k$ est plus plausible. Cette
+logique ne requiert pas d'étiquettes~; elle reste toutefois une approche pratique dont
+le comportement se dégrade lorsque le signal de groupe est faible (voir les
+scénarios S3--S4 du banc simulé, chapitre~5).
+
+\subsection{Fang \& Wang (2012)~: sélection de \texorpdfstring{$k$}{k} par instabilité bootstrap}
+Fang et Wang proposent de sélectionner $k$ en \emph{minimisant} une instabilité
+de clustering estimée par bootstrap. L'idée s'oppose aux procédures qui
+\emph{maximisent} une similarité avec une partition de référence inconnue~: deux
+échantillons bootstrap indépendants de taille $n$ sont tirés avec remise~; on
+clusterise chacun avec le même algorithme et le même $k$ sur la matrice de
+distances restreinte aux individus tirés, puis on compare les deux partitions
+après avoir prolongé les affectations à l'ensemble observé (classification des
+points non tirés au médoïde ou au centre le plus proche dans l'espace des
+distances). La désagrégation moyenne sur $B$ répétitions donne une estimation
+$\mathrm{Inst}(k)$ de l'instabilité attendue pour ce $k$. Le nombre de
+clusters retenu est
+\begin{equation}
+  k_{\mathrm{opt}} \in \arg\min_{k\in\mathcal{K}} \mathrm{Inst}(k)\,,
+\end{equation}
+où $\mathcal{K}$ est un ensemble fini de candidats (numériquement, souvent
+$\{2,\ldots,6\}$). L'article de référence est Fang \& Wang
+(2012), \emph{Computational Statistics and Data Analysis}. Des implémentations
+logicielles standard (environnement R) proposent cette procédure pour des
+matrices de distances et des méthodes de type k-médoïdes (PAM), ce qui permet de
+l'aligner sur le reste du pipeline sans introduire d'étiquettes dans le critère.
+
+\subsection{Mécanique mathématique du bootstrap et interprétation}
+Formellement, pour un algorithme de clustering $\mathcal{A}$ et une distance
+$D$ fixées, l'instabilité (au sens de Wang, estimée par bootstrap dans Fang \&
+Wang) est liée à la variabilité des partitions induites par deux échantillons
+indépendants de même loi empirique. Si l'on note $\mathcal{P}^{(1)}_b$ et
+$\mathcal{P}^{(2)}_b$ les partitions obtenues à la répétition $b$ après extension
+commune sur $\{1,\ldots,n\}$, et $\delta(\cdot,\cdot)$ une mesure de désaccord
+entre partitions (basée par exemple sur les co-affectations de paires, dans
+l'esprit des indices de Rand ou de leurs variantes normalisées), l'estimateur
+utilisé est de la forme
+\begin{equation}
+  \mathrm{Inst}(k)
+  = \frac{1}{B}\sum_{b=1}^B \delta\!\left(\mathcal{P}^{(1)}_b,\mathcal{P}^{(2)}_b\right)\,.
+\end{equation}
+Un $k$ trop petit peut fusionner des modes réels et paraître stable~; un $k$ trop
+grand fragmente le bruit et peut aussi instabiliser les frontières. Le minimum
+en $k$ traduit un compromis empirique entre parcimonie et reproductibilité sous
+resampling. Contrairement à certaines méthodes de ``stabilité'' construites
+autour d'une partition \emph{fixe} de référence et d'un score type ARI sur
+sous-échantillon --- qui peuvent favoriser mécaniquement les petits $k$ --- la
+comparaison de \emph{deux} partitions bootstrap indépendantes atténue partiellement
+ce biais structurel, au prix d'un coût de calcul ($B$ élevé, typiquement $150$
+dans les calculs numériques de ce chapitre).
+
+\subsection{Couplage avec la grille \texorpdfstring{$(\alpha,\omega)$}{(alpha, omega)} et rôle de l'évaluation}
+\emph{Côté calcul}, la matrice $\Dw(\alpha,\omega)$ dépend du couple
+$(\alpha,\omega)$~: pour chaque point de grille, on calcule $D$, puis
+$\mathrm{Inst}(k)$ sur les candidats $k\in\mathcal{K}$ et l'on obtient
+$k_{\mathrm{opt}}(\alpha,\omega)$. L'ordre opérationnel est donc une boucle sur
+$(\alpha,\omega)$ avec comparaison des $k$ à l'intérieur, et non un $k$ unique
+fixé une fois pour toutes avant toute grille. On obtient ainsi une carte
+$(\alpha,\omega)\mapsto k_{\mathrm{opt}}$ et des représentations
+d'instabilité (heatmaps) utiles au diagnostic. Les étiquettes, lorsqu'elles
+existent, ne participent pas à ce choix~: elles servent uniquement à calculer
+l'ARI ou des matrices de confusion \emph{après} fixation de
+$(k,\alpha,\omega)$, conformément à la règle de non-oracularité déjà posée dans
+l'introduction.
+
+\subsection{Cartes d'instabilité sur les jeux réels étiquetés}
+Comme annoncé en section~\ref{sec:silhouette}, l'illustration sur la grille
+$(\alpha,\omega)$ de ce chapitre repose sur l'instabilité bootstrap, et non sur
+une carte de silhouette. Les calculs numériques utilisent $B=150$ répétitions bootstrap, la grille
+$(\alpha,\omega)$ de $21\times 21$ points sur $[0,1]$ (pas $0{,}05$) et des
+candidats $k\in\{2,\ldots,6\}$, avec PAM sur $\Dw(\alpha,\omega)$ comme dans le
+reste du pipeline. La figure~\ref{fig:instab_reels} juxtapose les trois jeux
+réels détaillés au chapitre~6~: chaque planche regroupe cinq cartes
+$(\alpha,\omega)$, une par valeur de $k$ testée, plus une légende. L'échelle
+de couleur encode l'instabilité estimée (bleu~: faible, rouge~: forte)~; le
+symbole $\times$ indique le couple $(\alpha,\omega)$ qui minimise l'instabilité
+\emph{pour le $k$ correspondant}. La juxtaposition met en évidence que la
+forme des zones ``favorables'' varie fortement d'un jeu à l'autre (nombre de
+classes de référence, géométrie du signal fonctionnel et du bloc $Z$), alors
+que le protocole reste identique.
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[t]{0.32\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{nselectboot_heatmap_canadian.png}
+    \caption{Canadian Weather ($K=4$ régions).}
+    \label{fig:instab_canadian}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{0.32\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{nselectboot_heatmap_growth.png}
+    \caption{Growth ($K=2$, sexe).}
+    \label{fig:instab_growth}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{0.32\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{nselectboot_heatmap_tecator.png}
+    \caption{Tecator ($K=3$ classes de teneur en matières grasses).}
+    \label{fig:instab_tecator}
+  \end{subfigure}
+  \caption{Instabilité bootstrap (Fang \& Wang) sur $\Dw$ pour les trois jeux
+  réels~: comparaison directe des cartes par $k$ et par $(\alpha,\omega)$.}
+  \label{fig:instab_reels}
+\end{figure}
+
+\subsection{Synthèse du chapitre}
+Le triptyque méthodologique retenu est le suivant~: (i)~la silhouette demeure un
+critère interne lisible mais sujet au paradoxe de la séparation géométrique~;
+(ii)~le choix de $k$ à $(\alpha,\omega)$ fixé peut s'appuyer sur la minimisation
+de l'instabilité bootstrap au sens de Fang \& Wang~; (iii)~l'ARI et les partitions de référence restent des
+outils d'\emph{évaluation}, pas d'optimisation opérationnelle en contexte
+non étiqueté. Le chapitre~5 examine le comportement empirique de ces choix sur
+données simulées et confronte les scénarios à signal fort ou faible.
+
+\subsection{Complément~: instabilité bootstrap sur le banc simulé}
+Les mêmes principes (grille en $(\alpha,\omega)$, PAM sur $\Dw$, recherche de
+$k$ par instabilité bootstrap) ont été appliqués au banc simulé du
+chapitre~5, en quatre scénarios S1--S4. L'analyse sur données simulées utilise
+\emph{les mêmes} paramètres numériques que sur les trois jeux réels~: $B=150$
+répétitions bootstrap, grille $(\alpha,\omega)$ de $21\times 21$ points
+($0$ à $1$ par pas $0{,}05$), candidats $k\in\{2,\ldots,6\}$. Un bilan agrégé
+(une graine par scénario) indique~: pour S1, environ $91\,\%$ des couples
+$(\alpha,\omega)$ sélectionnent le $k_{\mathrm{opt}}$ égal au vrai $k=3$
+(proportion de grille alignée)~; pour S2, environ $72\,\%$~; pour S3, la
+proportion tombe à environ $8\,\%$ et la médiane de $k_{\mathrm{opt}}$ se
+décale vers des valeurs trop grandes~; pour S4, aucun couple ne retient
+$k=3$ (médiane et mode vers $6$). La figure~\ref{fig:instab_simule} montre, pour
+chaque scénario, les mêmes cartes d'instabilité par $k$ sur la grille
+$(\alpha,\omega)$ (une graine de référence par scénario, paramètres numériques
+identiques aux jeux réels)~: les zones de faible instabilité cessent d'être
+alignées avec le vrai $k$ lorsque le rapport signal\,/\,bruit global devient
+défavorable.
+Ce constat ne discrédite pas la procédure de Fang \& Wang en soi~: il rappelle
+que tout critère interne sans oracle se dégrade lorsque la structure de groupe
+est à peine identifiable.
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[t]{0.49\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{nselectboot_heatmap_sim_S1_seed1.png}
+    \caption{S1 --- signal fort sur $(\delta_1,\delta_2,\delta_3)$.}
+    \label{fig:instab_sim_S1}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{0.49\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{nselectboot_heatmap_sim_S2_seed1.png}
+    \caption{S2 --- affaiblissement de $\delta_3$.}
+    \label{fig:instab_sim_S2}
+  \end{subfigure}
+
+  \vspace{0.6em}
+
+  \begin{subfigure}[t]{0.49\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{nselectboot_heatmap_sim_S3_seed1.png}
+    \caption{S3 --- affaiblissement fonctionnel ($\delta_1,\delta_2$).}
+    \label{fig:instab_sim_S3}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{0.49\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{nselectboot_heatmap_sim_S4_seed1.png}
+    \caption{S4 --- affaiblissement global.}
+    \label{fig:instab_sim_S4}
+  \end{subfigure}
+  \caption{Banc simulé (même protocole $B=150$, grille $21\times 21$, $k\in\{2,\ldots,6\}$)~:
+  évolution des cartes d'instabilité lorsque les trois facteurs $\delta$ du
+  générateur (chapitre~5) passent du régime favorable (S1--S2) au régime
+  difficile (S3--S4). Lecture identique à la figure~\ref{fig:instab_reels}.}
+  \label{fig:instab_simule}
+\end{figure}
+
+\subsection{Règle de non-oracularité et paradoxe silhouette\,/\,ARI}
+\begin{filrouge}
+\textbf{Fil rouge --- paradoxe silhouette / ARI.}
+
+Le pipeline \textbf{sélectionne} $(\alpha,\omega)$ par silhouette (critère
+interne, sans vérité terrain). L'\textbf{évaluation} par ARI (lorsque les
+labels existent) peut montrer que des $\alpha$ élevés ou les dérivées sont
+informatifs, alors que le couple retenu par la silhouette peut favoriser
+$\alpha=0$~: écart entre «~bon au sens ARI sur une grille~» et «~choix
+opérationnel par silhouette~».
+
+\medskip
+\textbf{Règle.} L'ARI ne doit \textbf{pas} servir à optimiser $(\alpha,\omega)$
+dans une étude simulée non plus. Toute mention d'«~$\alpha$
+ARI-optimal~» est une \textbf{lecture a posteriori} pour illustration
+uniquement.
+\end{filrouge}
+
+% ---------------------------------------------------------------------------
+\section{Chapitre 5 --- Validation empirique sur un banc simulé contrôlé}
+% ---------------------------------------------------------------------------
+
+\subsection{Justification méthodologique du générateur contrôlé}
+Sur données réelles océanographiques ou bathymétriques, le rapport signal\,/\,bruit
+et le nombre effectif de modes de population sont inobservables sans étiquettes
+fiables. La seule voie pour \emph{fixer} simultanément le nombre de groupes
+$K$, la séparation entre classes sur la composante fonctionnelle et sur le
+vecteur $Z$, et les niveaux de bruit, est l'expérimentation sur données
+simulées dont la loi est connue par construction. Le banc retenu produit des courbes
+discrétisées à partir d'une base trigonométrique et de coefficients de classe,
+avec un canal dérivée explicite, et un bloc vectoriel $Z\in\mathbb{R}^p$ dont
+les centres de classe sont modulés par des paramètres
+$\delta=(\delta_1,\delta_2,\delta_3)$. Les variances de bruit gaussien sur le
+fonctionnel et sur le vectoriel sont fixées ($\sigma^2$, $\tau^2$), ce qui
+permet de balayer des régimes du facile au difficile tout en gardant une
+vérité terrain pour l'ARI. Sans cet ancrage, toute affirmation sur la
+supériorité d'une métrique hybride ou d'une chaîne HFV resterait une spéculation.
+
+\subsection{Schéma du générateur et protocole d'évaluation}
+Le générateur utilisé pour ce banc (décrit précisément dans le manifeste
+d'expérience associé au benchmark) produit des données dont la loi est
+entièrement contrôlée. Sur une
+grille de temps $(t_1,\ldots,t_N)$ sur $[0,1]$ ($N=60$), les courbes sont
+représentées dans une \emph{base trigonométrique} (paires $\sin/\cos$ à
+harmoniques croissants)~: ce ne sont pas des processus gaussiens fonctionnels
+complets, mais des trajectoires dont le signal déterministe par classe est
+combiné linéairement dans cette base, puis perturbées par un bruit gaussien
+additif indépendant de variance $\sigma^2$ sur chaque point d'échantillonnage.
+Les coefficients de chaque classe sur les premières harmoniques sont
+rééchelonnés par $\delta_1$ sur les indices de \emph{niveau} fonctionnel et
+$\delta_2$ sur les indices associés à la \emph{dynamique} (dérivée dans le
+formalisme du simulateur). Le bloc vectoriel $Z\in\mathbb{R}^p$ ($p=20$,
+valeur de référence) est construit à partir d'un mécanisme couplé aux scores
+latents fonctionnels~; les moyennes de classe sur $Z$ sont multipliées par
+$\delta_3$, puis un bruit gaussien de variance $\tau^2$ est ajouté composante
+par composante. Les effectifs par classe sont identiques ($100$ individus
+chacune), soit $n=300$ au total.
+
+\medskip
+\noindent
+Pour chaque scénario, le benchmark répète $50$ fois la chaîne complète
+(lissage, FPCA, distances, stratégies A/B/C et chaîne HFV) avec des graines
+indépendantes. Les hyperparamètres dépendant de la silhouette sont cherchés sur
+la même grille discrète que le pipeline principal~: pas $0{,}05$ sur $[0,1]$
+($21$ valeurs de $\alpha$ pour C et $D_f(\alpha)$, grille $21\times 21$ pour
+$(\alpha,\omega)$ sur $\Dw$). L'ARI entre la partition produite par chaque
+méthode et les étiquettes simulées sert \emph{uniquement} à l'évaluation~:
+conformément à la règle énoncée au chapitre~4, aucune grille
+d'hyperparamètres n'est optimisée par maximisation de l'ARI. Le
+tableau~\ref{tab:ari_scenarios} est régénéré automatiquement à partir des
+fichiers CSV du benchmark (commande \texttt{make benchmark-tex} depuis
+\texttt{docs/}, ou \texttt{Rscript scripts/generate\_rapport\_stage\_benchmark\_tex.R}
+à la racine du projet).
+
+\subsection{Scénarios S1 à S4~: interprétation du signal}
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{llll}
+  \toprule
+  \textbf{Scénario} & $\boldsymbol{\delta_1}$ & $\boldsymbol{\delta_2}$ & $\boldsymbol{\delta_3}$ \\
+  \midrule
+  S1 & 1.0 & 1.0 & 1.0 \\
+  S2 & 1.0 & 1.0 & 0.5 \\
+  S3 & 0.5 & 0.5 & 1.0 \\
+  S4 & 0.5 & 0.5 & 0.5 \\
+  \bottomrule
+\end{tabular}
+\caption{Les quatre scénarios du banc simulé. $\delta_1$ module le signal de
+\emph{niveau} fonctionnel, $\delta_2$ le signal de \emph{forme} (dérivée),
+$\delta_3$ l'écart entre les moyennes de $Z$ par classe. S1~=~signal fort
+sur toutes les modalités, S4~=~affaiblissement global.}
+\end{table}
+
+\paragraph{S1 : $(1,1,1)$.} Signal fort sur les trois leviers~; le classement
+ARI met en tête la stratégie~C ($\DK$ surface), puis la chaîne HFV$+\DK$, puis
+les approches qui partagent les mêmes scores sur $D_1$ et la stratégie~B
+(tableau~\ref{tab:ari_scenarios}).
+
+\paragraph{S2 : $(1,1,0.5)$.} Même intensité fonctionnelle que S1, mais $\delta_3$
+réduit la séparation entre moyennes de $Z$~; la stratégie~C reste en tête,
+ suivie des blocs $D_1$ / B / $D_f$ à ARI identique, puis $D_0$ et la chaîne
+HFV. La stratégie~A se dégrade (signal vectoriel moins marqué).
+
+\paragraph{S3 : $(0.5,0.5,1)$.} Fonctionnel affaibli, vectoriel fort~: le classement
+se renverse. La stratégie~A domine, suivie de $D_s$ puis de la stratégie~C~;
+les méthodes fortement ancrées sur la forme fonctionnelle chutent.
+
+\paragraph{S4 : $(0.5,0.5,0.5)$.} Affaiblissement global~: le meilleur ARI
+moyen est atteint par la baseline $D_1$, suivie de la stratégie~C et de la
+stratégie~A~; toutes les valeurs restent basses, ce qui traduit le
+caractère frontière du scénario.
+
+\subsection{Comparaison des stratégies~: tableau récapitulatif (ARI moyen)}
+
+Le tableau~\ref{tab:ari_scenarios} synthétise l'ARI moyen de chaque méthode sur
+les quatre scénarios ($50$ répliques par scénario, $n=300$, $K=3$, $p=20$). Les
+hyperparamètres relevant de la silhouette sont fixés comme dans le pipeline~;
+l'ARI n'intervient qu'en \emph{évaluation ex post}. Les valeurs sont lues
+directement dans les sorties agrégées du benchmark (fichiers CSV du dossier
+résultats).
+
+\input{generated/benchmark_ari_by_scenario.tex}
+
+\paragraph{Lecture globale.}
+Les moyennes globales confirment l'ordre de grandeur attendu~: stratégie~C
+($\approx 0{,}65$), puis $D_1$ et la chaîne HFV$+\DK$ ($\approx 0{,}61$--$0{,}63$),
+puis la stratégie~A ($\approx 0{,}56$). Les baselines $D_0$ et $D_s$ sont plus
+sensibles au scénario (voir S2--S3).
+
+\subsection{Effondrement en S4~: transparence sur les limites}
+
+Pour S4 ($\delta = (0{,}5, 0{,}5, 0{,}5)$), les ARI du
+tableau~\ref{tab:ari_scenarios} chutent simultanément~: la meilleure moyenne
+est celle de $D_1$ ($\approx 0{,}38$), suivie de la stratégie~C ($\approx
+0{,}32$) et de la stratégie~A ($\approx 0{,}32$). La chaîne HFV$+\DK$ se situe
+juste derrière ($\approx 0{,}30$). Ce constat s'interprète clairement~: aucune
+architecture du mémoire ne \emph{restaure} une structure absente au niveau du
+générateur.
+
+\subsection{Paradoxe silhouette\,/\,ARI sur le banc}
+Les méthodes qui maximisent la silhouette sur la stratégie~B (valeurs autour de
+$0{,}35$ en S1--S2) ne coïncident pas avec le meilleur ARI lorsque l'on compare
+les colonnes du même tableau~; le noyau $\DK$ de surface et la chaîne HFV puis
+noyau affichent des silhouettes plus modestes sur le même banc. Le paradoxe
+observé sur données réelles se reproduit donc sur le simulé~: maximiser la
+cohérence géométrique interne ne coïncide pas avec la récupération des classes
+lorsque celles-ci existent pour l'évaluation.
+
+\subsection{Protocole unifié (simulé et jeux réels)}
+Les comparaisons de ce chapitre et du chapitre~6 partagent la même logique~:
+mêmes familles de distances et de stratégies, sélection des hyperparamètres par
+critères internes (silhouette sur grilles discrètes, instabilité bootstrap pour
+$k$ lorsque ce volet est activé), et usage des étiquettes uniquement pour
+l'ARI et les matrices de confusion \emph{après coup}.
+
+\subsection{Limites du dispositif expérimental}
+Le générateur est unique, $p$ est fixé (valeur de référence $20$), les grilles
+d'hyperparamètres sont discrètes, et le nombre de clusters est fixé à $K=3$
+pour PAM — ce qui est une hypothèse forte mais nécessaire pour isoler l'effet
+des distances. Ces choix ne invalident pas la validation~: ils en circonscrivent
+le domaine de validité déclaré.
+
+% ---------------------------------------------------------------------------
+\section{Chapitre 6 --- Validation sur jeux réels étiquetés}
+% ---------------------------------------------------------------------------
+
+Au-delà du banc simulé, des essais sur trois jeux publics disposant
+d'étiquettes de référence ont été menés avec les mêmes étapes de lissage,
+FPCA, distances et stratégies A/B/C. Ces jeux ont l'avantage d'être bien
+documentés, de taille modeste, et de posséder des classes de référence
+consensuelles~--- ce qui permet une évaluation \emph{ex post} par ARI sans
+violer la règle de non-oracularité (les labels ne participent pas au réglage
+des hyperparamètres).
+
+\subsection{Jeux de données et protocole}
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{llcccc}
+  \toprule
+  \textbf{Dataset} & \textbf{Courbes $X(t)$} & $n$ & \textbf{$Z$} & $k$ & \textbf{Classes} \\
+  \midrule
+  Canadian Weather & Température (365 j) & 35 & lat, lon, précip & 4 & Régions climatiques \\
+  Growth           & Taille enfant (31 âges) & 93 & taille finale, croiss. & 2 & Garçon / Fille \\
+  Tecator          & Spectres NIR (100\,$\lambda$) & 215 & water, protein & 3 & Niveau de gras \\
+  \bottomrule
+\end{tabular}
+\caption{Trois jeux publics étiquetés utilisés pour la validation des stratégies.}
+\end{table}
+
+\subsection{Données brutes~: Canadian Weather}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.82\textwidth]{canadian_weather/fig02_courbes_regions.png}
+  \caption{Canadian Weather --- 35 courbes de température annuelle lissées, colorées par
+  région climatique. La séparation visuelle entre les 4 régions (Atlantique, Continentale,
+  Arctique, Pacifique) justifie le choix $k = 4$.}
+\end{figure}
+
+\subsection{Résultats comparatifs (trois jeux)}
+
+\input{generated/ch6_real_three_games_table.tex}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.82\textwidth]{canadian_weather/fig06_comparaison.png}
+  \caption{Canadian Weather~: comparaison silhouette / ARI (même protocole que le
+  tableau~\ref{tab:resultats_reels}, six familles dont HFV$+$ $\DK$ sur
+  reconstructions).}
+  \label{fig:comparaison_strategies}
+\end{figure}
+
+\subsection{Interprétation}
+
+\paragraph{Stratégie A (FPCA$+Z$, k-means) et ligne de base.}
+Sur Canadian Weather et Growth, la stratégie~A atteint le meilleur ARI du
+tableau~\ref{tab:resultats_reels}. Sur Tecator, c'est la baseline $D_s$
+(seul bloc vectoriel) qui maximise l'ARI ($0{,}546$)~: le signal discriminant
+y est surtout porté par les covariables chimiques, ce qui relativise
+l'apport de la forme spectrale pour cette étiquette de classe. La chaîne
+HFV$+$ $\DK$ se situe au même ordre de grandeur que la stratégie~C sur les
+trois jeux et rejoint l'ARI de~C sur Canadian Weather ($0{,}686$), ce qui
+illustre le rôle de la covariance croisée lorsque les deux modalités sont
+jointement informatives.
+
+\paragraph{Paradoxe silhouette / ARI sur données réelles.}
+Pour la stratégie~B, le couple $(\alpha,\omega)$ maximisant la silhouette
+diverge systématiquement du couple qui maximiserait l'ARI~: la silhouette
+sélectionne des configurations proches des baselines pures ($\omega \in \{0,1\}$)
+plutôt que des mélanges hybrides équilibrés. Ce constat reproduit le paradoxe
+documenté au chapitre~4 et s'observe de façon cohérente sur les trois jeux.
+
+\paragraph{Poids de la forme ($D_1$) sous optimisation ARI.}
+Sur les trois jeux, le paramètre $\alpha$ maximisant l'ARI (lecture \emph{ex
+post} uniquement) satisfait $\alpha \geq 0{,}6$~: la dynamique de forme est
+systématiquement plus discriminante que le seul niveau vertical. Cette
+observation confirme le rôle informatif de $D_1$ et plaide pour ne pas fixer
+$\alpha = 0$ par défaut en mode opérationnel.
+
+% ---------------------------------------------------------------------------
+\section{Conclusion générale}
+% ---------------------------------------------------------------------------
+
+Le mémoire a articulé une chaîne complète~: problème mixte $(X,Z)$ posé par la
+proposition de projet long (Master TRIED), architectures de distances de surface et
+stratégies A/B/C (chapitre~2), ACP hybride avec covariance croisée par blocs
+$V$ et reconstruction dans $\Ltwo$ (chapitre~3), verrou du non-supervisé avec
+silhouette et instabilité bootstrap de Fang \& Wang (chapitre~4), validation
+sur le banc simulé contrôlé (chapitre~5), puis validation sur trois jeux réels
+étiquetés (chapitre~6).
+
+La validation empirique montre que cette architecture se comporte de façon
+cohérente et prévisible lorsque le signal est suffisant (S1--S2, partiellement
+S3 sur le banc simulé~; Canadian Weather et Growth sur données réelles). Elle
+se dégrade lucidement lorsque le signal s'effondre (S4), sans masquer la
+confusion des partitions. La comparaison entre noyau $\DK$ de surface et
+chaîne HFV suivie de noyau situe cette dernière comme compétitive et
+interprétable, sans la poser comme universalité statistique.
+
+En l'état, l'ensemble constitue un \emph{prérequis validé en milieu
+contrôlé}~: les définitions, les procédures et les critères d'évaluation
+sans oracle sont alignés sur une même exigence de reproductibilité. Ce
+niveau de rigueur est la condition minimale avant d'envisager un déploiement sur
+les jeux massifs, hétérogènes et partiellement non documentés que recèlent les
+contextes opérationnels de type SHOM, où la vérité terrain restera, pour
+l'essentiel, inaccessible. La poursuite du travail consistera à traiter ces
+données réelles comme des cas d'usage \emph{sans} étiquettes, en transportant
+les protocoles de sélection interne (silhouette, stabilité) et en réservant
+toute métrique fondée sur des labels à des évaluations ponctuelles
+ou à des campagnes de validation indépendantes.
+
+% ---------------------------------------------------------------------------
+% Bibliographie : à compléter (même style .bib que les autres rapports si besoin)
+% \bibliographystyle{plain}
+% \bibliography{references}
+% ---------------------------------------------------------------------------
+
+\end{document}

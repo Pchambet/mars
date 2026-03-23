@@ -4,6 +4,8 @@
 **Date de revue** : mars 2026  
 **Réviseur** : analyse automatique + vérification croisée pipeline
 
+**Liens** : périmètre et plan du **rapport de stage** (15–20 p., fil paradoxe/ARI) — [`RAPPORT_STAGE.md`](RAPPORT_STAGE.md) ; cartographie du dépôt — [`AUDIT_PROJET.md`](AUDIT_PROJET.md).
+
 ---
 
 ## 1. Vue d'ensemble

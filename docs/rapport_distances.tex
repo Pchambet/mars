@@ -429,7 +429,7 @@ supervisée.
   \item \textbf{Cas dégénérés} : si $\omega^* = 0$, le fonctionnel est inutile
     sur ce jeu de données. Si $\omega^* = 1$, le vectoriel est inutile.
   \item Le grid search est exact sur la grille mais ne teste pas les valeurs
-    entre les pas de 0.1. Affiner la grille (pas de 0.05) est possible mais
+    entre les pas (ici $0{,}05$ sur $[0,1]$). Un pas plus fin reste possible mais
     coûteux.
 \end{itemize}
 
@@ -485,13 +485,13 @@ $K(i,j) \approx 0$ même si $K_s(i,j) = 1$ (vecteurs identiques).
 
 C'est une forme de \textbf{ET logique flou} entre les deux sources.
 
-\subsection{Heuristique de la médiane pour $\sigma$}
+\subsection{Règle de la médiane pour $\sigma$}
 
 Le choix de $\sigma$ est crucial. Trop petit : $K \approx I_n$ (matrice
 identité, tout est dissimilaire). Trop grand : $K \approx \mathbf{1}$
 (tout est similaire).
 
-L'\textbf{heuristique de la médiane} (Jaakkola \& Haussler, 1999) fixe
+La \textbf{règle de la médiane} (Jaakkola \& Haussler, 1999) fixe
 $\sigma$ à la médiane de toutes les distances non nulles. Cela garantit
 qu'environ la moitié des paires ont $K > 0.5$ et l'autre moitié $K < 0.5$
 — un bon équilibre.

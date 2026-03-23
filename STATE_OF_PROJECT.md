@@ -8,7 +8,7 @@
 | Symbole | Où | Rôle |
 |---------|-----|------|
 | **ω** | Étape 03, stratégie B | Paramètre **Dw(α, ω)** : mélange fonctionnel / vectoriel dans la **matrice de distances**. |
-| **r** | Étape 02b | Ratio HFV **V_F / V_Y** pour pondérer les **blocs** avant fusion dans l’ACP hybride (voir [`NOTE_RS_PCA_VS_HFV_PCA.md`](experiments/03_simulated_hybride/NOTE_RS_PCA_VS_HFV_PCA.md)). |
+| **R** | Étape 02b | Ratio HFV **V_F / V_Y** (notation du rapport ; **R** pour *ratio*, distinct de **ω** dans **D<sub>w</sub>**) pour pondérer les **blocs** avant fusion dans l’ACP hybride — le code peut nommer la variable `r` (voir [`NOTE_RS_PCA_VS_HFV_PCA.md`](experiments/03_simulated_hybride/NOTE_RS_PCA_VS_HFV_PCA.md)). |
 
 ---
 
@@ -49,8 +49,9 @@ Les **dérivées sont systématiquement informatives** lorsqu’on **évalue** a
 
 - **Pipeline** : `src/main.R` → 00_preprocess → 01_lissage → 02_fpca → 03_distances → 04_clustering → 05_visualisation  
   Chaîne optionnelle hybride : `02b_pca_hybride_reconstruction.R` → `03b_distances_noyaux_hybrides.R` (exp. simulée `experiments/03_simulated_hybride/`).
-- **Expériences** : `experiments/01_instabilite/` (instabilité / nselectboot, exp. 01), `experiments/02_vote_criteres/`, etc.
-- **Rapports** : `docs/rapport_synthese.tex` (monolithique, ~1120 lignes)
+- **Expériences** : `experiments/01_instabilite/` (instabilité / nselectboot), `experiments/03_simulated_hybride/` (benchmark simulé, 02b+03b). Inventaire : [`experiments/README.md`](experiments/README.md).
+- **Rapports** : `docs/rapport_synthese.tex` (synthèse longue, référence chiffres) ; **rapport de stage** (15–20 p.) : cadrage dans [`docs/RAPPORT_STAGE.md`](docs/RAPPORT_STAGE.md) (source canonique = document court dérivé, pas recopie intégrale du monolithe).
+- **Audit** : cartographie docs/code et écarts README : [`docs/AUDIT_PROJET.md`](docs/AUDIT_PROJET.md).
 - **Compilation** : `make all` (depuis la racine) ou `make -C docs` pour LaTeX seul
 
 ## 6. Instructions pour l'Agent
@@ -59,9 +60,9 @@ Avant une action complexe (réécriture, refactor R, modification de formules) :
 
 1. **Relire** : Hypothèse centrale (§1) et paradoxe (§2)
 2. **Vérifier** : La modification ne contredit pas les découvertes documentées
-3. **Consulter** : `docs/revue_rapport_synthese.md` pour les valeurs de référence
+3. **Consulter** : `docs/revue_rapport_synthese.md` pour les valeurs de référence ; `docs/RAPPORT_STAGE.md` pour le cadrage du rapport de stage (si rédaction ou extraction courte)
 4. **Respecter** : `.cursor/rules/r_strict.mdc` pour les paramètres R
-5. **Nomenclature** : **ω** (Dw) vs **r** (HFV) — voir tableau en tête de ce fichier  
+5. **Nomenclature** : **ω** (Dw) vs **R** (HFV, ratio inter-blocs) — voir tableau en tête de ce fichier  
 6. **ARI** : métrique d’**évaluation** uniquement — jamais pour optimiser α, ω ou d’autres hyperparamètres dans le code ou les benchmarks
 
 ## 7. Prochaines étapes (priorités)

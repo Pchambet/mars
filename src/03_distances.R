@@ -71,8 +71,8 @@ compute_Dp <- function(D0_norm, D1_norm, alpha) {
   sqrt((1 - alpha) * D0_norm^2 + alpha * D1_norm^2)
 }
 
-# Grille de α à explorer
-alphas <- seq(0, 1, by = 0.1)
+# Grille de α à explorer (21 points : pas 0,05 sur [0,1] — aligné nselectboot / grille 21×21)
+alphas <- seq(0, 1, by = 0.05)
 
 # ═══════════════════════════════════════════════════════════════════════════
 # B. DISTANCE VECTORIELLE (sur Z)
@@ -97,8 +97,8 @@ compute_Dw <- function(Dp, Ds_norm, omega) {
   sqrt(omega * Dp^2 + (1 - omega) * Ds_norm^2)
 }
 
-# Grilles pour le grid search 2D
-omegas <- seq(0, 1, by = 0.1)
+# Grilles pour le grid search 2D (21×21 couples (α,ω), même pas que ci-dessus)
+omegas <- seq(0, 1, by = 0.05)
 
 # ─── DK(α) : distance à noyaux (stratégie C, Ferreira & de Carvalho 2014) ───
 # K = Kf · Ks (noyau produit)

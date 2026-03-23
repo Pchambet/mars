@@ -4,7 +4,7 @@
 
 ## Protocole
 - Donnees : simulateur `Cas2_deriv` (`K=3` classes, `n=300`, `N=60`, **`p=20` par defaut** (`P_Z_SIM`) pour un bloc `Z` plus riche et une ACP hybride (02b) plus informative ; voir `PCA_Z_Q` dans `src/00_preprocess_simulated.R`).
-- Scenarios : `S1(Delta1=1, Delta2=1)`, `S2(1,0.5)`, `S3(0.5,1)`, `S4(0.5,0.5)`.
+- Scenarios (triplet δ = (δ₁, δ₂, δ₃) pour `Cas2_deriv`, aligné `benchmark_all_methods_simulated.R`) : `S1` (1,1,1), `S2` (1,1,0.5), `S3` (0.5,0.5,1), `S4` (0.5,0.5,0.5).
 - Repetitions : 50 seeds/scenario.
 - Metriques : ARI, silhouette, matrices de confusion (seed 42 par scenario).
 - **Regle de conduite** : l'ARI (et toute verite terrain) ne sert **jamais** au choix des hyperparametres (`alpha`, `omega`, etc.) ; uniquement a l'**evaluation** des partitions obtenues. Les grilles utilisent la **silhouette** pour selectionner `alpha` / `(alpha, omega)` la ou un critere interne est requis.

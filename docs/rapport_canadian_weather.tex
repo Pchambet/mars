@@ -429,8 +429,8 @@ La distance associée est :
 \]
 \end{definition}
 
-Les largeurs de bande $\sigma_f$ et $\sigma_s$ sont fixées par l'heuristique
-de la médiane \cite{jaakkola1999}. Le seul paramètre libre est $\alpha$,
+Les largeurs de bande $\sigma_f$ et $\sigma_s$ sont fixées par la règle de la
+médiane \cite{jaakkola1999}. Le seul paramètre libre est $\alpha$,
 optimisé par grid search sur $\{0, 0.1, \ldots, 1\}$.
 
 % ============================================================================
@@ -456,7 +456,7 @@ directement dans $\R^5$.
 \subsection{Stratégie B : $\Dw(\alpha, \omega)$ + PAM}
 
 On construit $\Dw(\alpha, \omega)$ pour chaque couple $(\alpha, \omega)$ dans
-la grille $\{0, 0.1, \ldots, 1\}^2$, puis on applique \textbf{PAM}
+la grille $\{0, 0.05, \ldots, 1\}^2$ ($21 \times 21$ points), puis on applique \textbf{PAM}
 (Partitioning Around Medoids) avec $k = 4$.
 
 \paragraph{Pourquoi PAM et pas k-means ?}
@@ -469,11 +469,11 @@ des distances aux points de leur cluster.
 \paragraph{Grid search 2D.}
 Pour chaque couple $(\alpha, \omega)$, on calcule la silhouette moyenne. Le
 couple optimal est celui qui maximise ce critère. Cela représente
-$11 \times 11 = 121$ exécutions de PAM.
+$21 \times 21 = 441$ exécutions de PAM.
 
 \subsection{Stratégie C : $\DK(\alpha)$ + PAM}
 
-On construit $\DK(\alpha)$ pour chaque $\alpha \in \{0, 0.1, \ldots, 1\}$, puis
+On construit $\DK(\alpha)$ pour chaque $\alpha \in \{0, 0.05, \ldots, 1\}$, puis
 PAM avec $k = 4$. Le $\alpha$ optimal maximise la silhouette.
 
 \subsection{Baselines}

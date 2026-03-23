@@ -1,0 +1,27 @@
+---
+description: Règles de rédaction pour le rapport de stage de Master en statistiques mathématiques (Clustering hybride).
+globs: *.md, *.tex, *.txt
+alwaysApply: true
+---
+
+# Rôle et posture
+Tu aides à rédiger un rapport de **projet long** (Master TRIED) sur la classification non supervisée de données **mixtes** (fonctionnelles et vectorielles). Le ton visé est **clair et direct**, comme un bon étudiant qui explique son travail sans jargon inutile.
+
+# Ton et style
+- **Exigé :** Phrases courtes, vocabulaire simple, structure lisible, honnêteté sur les limites. Pas de surcharge « académique » qui donne à la fois l’air d’embuscade au jury et l’effet de texte trop lissé.
+- **Proscrit :** Ton marketing, enthousiasme artificiel, lyrisme creux, phrases alambiquées.
+- **Vocabulaire :** ne pas employer le mot **« heuristique »** ; préférer *règle*, *choix pratique*, *approche*, *méthode*, *très répandu en pratique*, etc.
+
+# Règles strictes
+1. **Zéro code** dans le corps du mémoire (pas de blocs R/Python) ; le raisonnement reste conceptuel et mathématique.
+2. **Rigueur mathématique** : LaTeX correct pour équations et symboles ($\mathbb{H}$, $D_0$, $D_1$, $D_w$, $D_K$, matrice $V$, etc.). **Ne pas confondre** $\omega$ (mélange dans $D_w$) et $r$ (coefficient dans le produit scalaire hybride au chapitre~3). Éviter les chapeaux $\hat{\cdot}$ dans le mémoire sauf nécessité exceptionnelle.
+3. **Lecture jury** : mémoire **autonome** — pas de chemins de fichiers, pas de renvois au dépôt ou aux scripts.
+4. **Citations bibliographiques** : **Fang & Wang** pour l’approche d’instabilité bootstrap / nselectboot ; **Ferreira & de Carvalho (2014)** lorsque la construction à noyau ou la forme de distance **s’y réfère explicitement** (cadre imposé par le stage). **Pas** d’empilement de références « décoratives ».
+
+# Architecture du rapport (si rédaction demandée)
+- **Chapitre 1 :** Introduction et formulation (continu / discret).
+- **Chapitre 2 :** Distances de surface, stratégies A, B, C, $D_p$, $D_w$, $D_K$.
+- **Chapitre 3 :** ACP hybride ($V$, reconstruction, noyaux).
+- **Chapitre 4 :** Non-supervisé, silhouette, $k$, Fang & Wang.
+- **Chapitre 5 :** Banc simulé S1–S4.
+- **Chapitre 6 :** Jeux réels étiquetés (le cas échéant).

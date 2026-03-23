@@ -11,8 +11,8 @@
 # - Historiques       : A, B-silopt (selection silhouette sur la grille), C (DK ancien)
 # - Nouvelle chaîne   : DK reconstruit (02b + 03b) ; colonne r = ratio HFV 02b (≠ ω Dw)
 #
-# Design standard :
-# - 4 scénarios Delta1/Delta2 : (1,1), (1,0.5), (0.5,1), (0.5,0.5)
+# Design standard (triplets δ = (δ₁, δ₂, δ₃) passés à Cas2_deriv) :
+#   S1 (1,1,1), S2 (1,1,0.5), S3 (0.5,0.5,1), S4 (0.5,0.5,0.5)
 # - 50 seeds par scénario
 #
 # Sorties :
@@ -49,7 +49,8 @@ compute_pam_metrics <- function(D, labels_true, k) {
   list(clustering = fit$clustering, silhouette = sil, ari = ari)
 }
 
-alphas <- seq(0, 1, by = 0.1)
+# Aligné sur src/03_distances.R : 21×21 (pas 0,05)
+alphas <- seq(0, 1, by = 0.05)
 
 scenario_grid <- list(
   S1 = c(1.0, 1.0, 1.0),
@@ -138,7 +139,8 @@ for (sc_name in names(scenario_grid)) {
       metrics[[i_row]] <- data.frame(
         scenario = sc_name,
         delta1 = DELTA_SC[1],
-        delta2 = DELTA_SC[3],
+        delta2 = DELTA_SC[2],
+        delta3 = DELTA_SC[3],
         seed = seed,
         method = mname,
         silhouette = mm$sil,

@@ -49,7 +49,8 @@ for (sid in seq_len(nrow(scenario_df))) {
   qc_rows[[length(qc_rows) + 1L]] <- data.frame(
     scenario = sc_name,
     delta1 = DELTA_SIM[1],
-    delta2 = DELTA_SIM[3],
+    delta2 = DELTA_SIM[2],
+    delta3 = DELTA_SIM[3],
     n = n,
     N = N,
     p = ncol(Z),

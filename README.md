@@ -24,7 +24,9 @@ src/
 ├── 03_distances.R          D0, D1, Dp, Ds, Dw, DK (opérations matricielles)
 ├── 04_clustering.R         3 stratégies + baselines, ARI + silhouette
 ├── 05_visualisation.R      8 figures dans figures/<dataset>/
-└── main.R                  Pipeline complet
+├── 02b_pca_hybride_reconstruction.R  ACP hybride HFV (hors main.R par défaut)
+├── 03b_distances_noyaux_hybrides.R   Noyaux hybrides sur reconstructions
+└── main.R                  Pipeline complet (00→05 ; pas 02b/03b)
 
 docs/
 ├── resume_donnees_fonctionnelles.tex  Théorie FDA, FPCA, clustering
@@ -41,15 +43,10 @@ figures/
 ├── growth/                8 figures
 └── tecator/               8 figures
 
-experiments/               Perspectives de recherche (rapport § 8)
-├── 01_instabilite/       Exp. 01 — instabilité bootstrap (Fang et Wang) / nselectboot
-├── 02_vote_criteres/      Vote entre critères
-├── 03_optimisation_bayesienne/
-├── 04_meta_calibration/
-├── 05_derivees_D2/        Dérivées d'ordre supérieur
-├── 06_consensus_clustering/
-├── 07_application_non_labelisees/
-└── README.md              Inventaire et conventions
+experiments/               Protocoles et benchmarks hors pipeline minimal
+├── 01_instabilite/       Exp. 01 — instabilité bootstrap / nselectboot
+├── 03_simulated_hybride/ Exp. 03 — données simulées, ACP hybride + noyaux, CSV résultats
+└── README.md              Inventaire à jour des sous-dossiers
 ```
 
 ## Démarrage rapide
@@ -83,6 +80,8 @@ source("src/main.R")
 - **Architecture** : `docs/rapport_distances.pdf` — toutes les distances, définitions, propriétés
 - **Résultats** : `docs/rapport_canadian_weather.pdf` — pipeline complet + diagnostic
 - **Synthèse** : `docs/rapport_synthese.pdf` — résultats multi-dataset, perspectives
+- **Rapport de stage** : `docs/rapport_stage.tex` → `docs/rapport_stage.pdf` ; cadrage dans `docs/RAPPORT_STAGE.md` (15–20 p., paradoxe silhouette/ARI)
+- **Audit projet** : `docs/AUDIT_PROJET.md` — cartographie docs/expériences/code
 
 ### Compilation des rapports LaTeX
 

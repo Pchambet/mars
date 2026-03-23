@@ -1,0 +1,7 @@
+"Strategie","Silhouette","ARI"
+"Baseline D0",0.402,0.115
+"Baseline Ds",0.554,0.424
+"A (FPCA+Z)",0.36,0.682
+"B (Dw α=0.00 ω=0.00)",0.554,0.424
+"C (DK α=0.00)",0.261,0.368
+"HFV + DK (reconstr.)",0.273,0.368

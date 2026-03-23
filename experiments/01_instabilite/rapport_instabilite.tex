@@ -26,7 +26,7 @@
 \textit{(Figure indisponible pour le scénario #1, graine #2.)}
 \end{center}}}
 
-\title{Rapport d'instabilité --- Expérience 01 (Fang \& Wang)}
+\title{Rapport d'instabilité (Fang \& Wang)}
 \author{Pierre Chambet}
 \date{Mars 2026}
 
@@ -36,17 +36,11 @@
 \begin{abstract}
 On veut choisir $k$ (nombre de clusters) et les paramètres de distance
 $(\alpha,\omega)$ sans labels. Ce rapport se concentre sur une méthode de la
-littérature : \textbf{nselectboot} (Fang \& Wang, 2012), implémentée dans R
-(\texttt{fpc::nselectboot}), qui minimise une \textbf{instabilité} mesurée par
-bootstrap. Un ancien protocole de « stabilité » ad hoc (sans article de référence)
-a été retiré pour clarifier le message. On teste une grille 21×21 en
+littérature : \textbf{nselectboot} (Fang \& Wang, 2012) qui minimise une \textbf{instabilité} mesurée par
+bootstrap. On teste une grille 21×21 en
 $(\alpha,\omega)$ sur quatre jeux de données ; les labels ne servent qu'à
-évaluer l'ARI une fois $k$ choisi. Des \textbf{données simulées} et des
-\textbf{études sur données simulées} complètent le rapport : données artificielles
-où le vrai $k$ est connu, pour voir si la méthode se comporte bien quand on
-connaît la réponse. Pour gagner du temps, ces calculs utilisent
-une grille plus lâche ($6\times6$) et moins de répétitions bootstrap ($B=60$) que
-les quatre jeux réels ($21\times21$, $B=150$).
+évaluer l'ARI une fois $k$ choisi. Une étude sur données simulées complète le rapport : données artificielles
+où le vrai $k$ est connu.
 \end{abstract}
 
 \tableofcontents
@@ -66,22 +60,10 @@ On veut choisir trois quantités \textbf{sans utiliser les labels pour le choix}
     vectorielle ($Z$).
 \end{itemize}
 
-La méthode retenue est \textbf{nselectboot} : pour chaque couple $(\alpha,\omega)$
-de la grille, on estime un $k_\text{opt}$ qui minimise l'instabilité bootstrap.
+On estime un $k_\text{opt}$ qui minimise l'instabilité bootstrap.
 On obtient une carte $(\alpha,\omega) \mapsto k_\text{opt}$ et des heatmaps
-d'instabilité par $k$.
-
-\paragraph{Pourquoi une grille en $(\alpha,\omega)$ ?}
-Parce que $\alpha$ et $\omega$ changent la matrice de distances $D_w(\alpha,\omega)$
-et donc le clustering. Les heatmaps montrent l'instabilité par $(\alpha,\omega)$
+d'instabilité par $k$. Les heatmaps montrent l'instabilité par $(\alpha,\omega)$
 et $k$ : \textbf{bleu = faible instabilité (bon)}, \textbf{rouge = forte (mauvais)}.
-
-% ============================================================================
-\section{Le problème en une phrase}
-% ============================================================================
-
-Pour du clustering, il faut fixer $k$ et la distance. Sans vérité terrain pour
-choisir, on utilise un critère documenté (instabilité bootstrap).
 
 % ============================================================================
 \section{Les trois paramètres et les données}

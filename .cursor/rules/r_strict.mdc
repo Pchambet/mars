@@ -30,12 +30,6 @@ Avant toute modification proposée :
 2. **Expliquer** l'impact mathématique (ex. : « augmenter α renforce le poids des dérivées dans la distance »)
 3. **Proposer** une vérification (ex. : comparer ARI avant/après sur Canadian Weather)
 
-## Références de vérité
-
-- **Seed** : `set.seed(42)` — ne jamais changer
-- **Valeurs attendues** (Canadian, seed=42) : voir `docs/revue_rapport_synthese.md`
-- **ARI (α=0.6, ω=0.8)** : 0.898 pour stratégie B sur Canadian
-
 ## Interdictions
 
 - Ne pas « torturer les données » pour faire tourner le code sans erreur

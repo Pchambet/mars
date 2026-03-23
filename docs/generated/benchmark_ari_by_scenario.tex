@@ -1,0 +1,36 @@
+% ---------------------------------------------------------------------------
+% Fichier généré — NE PAS ÉDITER À LA MAIN
+% Source : experiments/03_simulated_hybride/results/metrics_summary_by_scenario_method.csv
+%        + experiments/03_simulated_hybride/results/metrics_global_average_by_method.csv
+% Généré le : 2026-03-22 13:23:28 CET
+% Git : 394a048
+% Regénérer : Rscript scripts/generate_rapport_stage_benchmark_tex.R
+% ---------------------------------------------------------------------------
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{lcccc|c}
+  \toprule
+  \textbf{Méthode} & \textbf{S1} & \textbf{S2} & \textbf{S3} & \textbf{S4} & \textbf{Moy. glob.} \\
+  \midrule
+  Baseline $D_0$ & 0{,}830 & 0{,}830 & 0{,}226 & 0{,}226 & 0{,}528 \\
+  Baseline $D_s$ & 0{,}567 & 0{,}333 & 0{,}511 & 0{,}247 & 0{,}414 \\
+  Stratégie A (FPCA$+Z$) & 0{,}782 & 0{,}524 & 0{,}623 & 0{,}315 & 0{,}561 \\
+  Stratégie B ($\Dw$, sil.) & 0{,}873 & 0{,}873 & 0{,}239 & 0{,}238 & 0{,}556 \\
+  Stratégie C ($\DK$ surface) & 0{,}938 & 0{,}887 & 0{,}464 & 0{,}317 & 0{,}651 \\
+  Baseline $D_1$ & 0{,}873 & 0{,}873 & 0{,}378 & 0{,}378 & 0{,}626 \\
+  $D_f(\alpha)$ (sil.) & 0{,}873 & 0{,}873 & 0{,}237 & 0{,}237 & 0{,}555 \\
+  HFV $+$ $\DK$ (reconstr.) & 0{,}897 & 0{,}802 & 0{,}433 & 0{,}301 & 0{,}608 \\
+  \bottomrule
+\end{tabular}
+\caption{ARI moyen par scénario et par méthode ($50$ répétitions par scénario,
+  $n=300$, $K=3$, $p=20$). Grille $\alpha$ (et $(\alpha,\omega)$ pour la stratégie~B)
+  : $21$ valeurs sur $[0,1]$ (pas $0{,}05$, soit $21\times 21$ couples pour~B).
+  Hyperparamètres choisis par silhouette (stratégies B, C, $D_f(\alpha)$)~;
+  l'ARI sert uniquement à l'évaluation.
+  \emph{Moy. glob.}~: moyenne sur l'ensemble des $200$ runs ($4\times 50$), fichier
+  \texttt{metrics\_global\_average\_by\_method.csv}.}
+\label{tab:ari_scenarios}
+\end{table}
+

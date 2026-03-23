@@ -153,17 +153,18 @@ legend("topleft", legend = c("Silhouette", "ARI"),
 dev.off()
 
 # ═══════════════════════════════════════════════════════════════════════════
-# FIG 6 : Barplot comparatif des 5 approches
+# FIG 6 : Barplot comparatif (baselines + A/B/C + HFV+DK)
 # ═══════════════════════════════════════════════════════════════════════════
-png(file.path(fig_dir, "fig06_comparaison.png"), width = 900, height = 500)
-par(mfrow = c(1, 2), mar = c(8, 4, 4, 1))
+png(file.path(fig_dir, "fig06_comparaison.png"), width = 1000, height = 520)
+par(mfrow = c(1, 2), mar = c(10, 4, 4, 1))
 
+cols6 <- c("gray70", "gray70", "#4daf4a", "#377eb8", "#e41a1c", "#984ea3")
 barplot(comparaison$Silhouette, names.arg = comparaison$Strategie,
-        col = c("gray70", "gray70", "#4daf4a", "#377eb8", "#e41a1c"),
+        col = cols6,
         main = "Silhouette moyenne", las = 2, ylim = c(0, 1))
 
 barplot(comparaison$ARI, names.arg = comparaison$Strategie,
-        col = c("gray70", "gray70", "#4daf4a", "#377eb8", "#e41a1c"),
+        col = cols6,
         main = "ARI (vs régions)", las = 2, ylim = c(-0.1, 1))
 abline(h = 0, lty = 3)
 
@@ -171,10 +172,10 @@ par(mfrow = c(1, 1))
 dev.off()
 
 # ═══════════════════════════════════════════════════════════════════════════
-# FIG 7 : Courbes colorées par cluster — chaque stratégie
+# FIG 7 : Courbes colorées par cluster — chaque stratégie (+ HFV+DK)
 # ═══════════════════════════════════════════════════════════════════════════
-png(file.path(fig_dir, "fig07_courbes_par_cluster.png"), width = 1200, height = 800)
-par(mfrow = c(2, 3))
+png(file.path(fig_dir, "fig07_courbes_par_cluster.png"), width = 1400, height = 900)
+par(mfrow = c(3, 3), mar = c(4, 4, 3, 1))
 
 # Vérité terrain
 plot(X_hat, col = couleurs_vrai, lwd = 1.2, main = "Vérité terrain",
@@ -202,6 +203,16 @@ plot(X_hat, col = palette_cluster[resultats_B$labels], lwd = 1.2,
 plot(X_hat, col = palette_cluster[resultats_C$labels], lwd = 1.2,
      main = sprintf("C: DK α=%.1f (ARI=%.2f)", alpha_best_C, ari_C),
      xlab = xlab_courbe, ylab = ylab_courbe)
+
+# HFV + DK (reconstruit)
+plot(X_hat, col = palette_cluster[resultats_DK_hfv$labels], lwd = 1.2,
+     main = sprintf("HFV+DK (ARI=%.2f)", resultats_DK_hfv$ari),
+     xlab = xlab_courbe, ylab = ylab_courbe)
+
+# Deux cases vides pour compléter la grille 3x3
+plot.new()
+
+plot.new()
 
 par(mfrow = c(1, 1))
 dev.off()
