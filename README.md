@@ -1,98 +1,116 @@
-# Classification non-supervisée de données mixtes — Application en océanographie
+<div align="center">
+  <h1>Classification non-supervisée de données mixtes</h1>
+  <p><strong>Application à des variables hybrides (Fonctionnelles & Vectorielles)</strong></p>
 
-> **Auteur** : Pierre  
-> **Stage** : Mars 2026
+  ![R](https://img.shields.io/badge/R-%23276DC3.svg?style=for-the-badge&logo=r&logoColor=white)
+  ![LaTeX](https://img.shields.io/badge/latex-%23008080.svg?style=for-the-badge&logo=latex&logoColor=white)
+  ![Data Science](https://img.shields.io/badge/Data%20Science-Unsupervised%20Learning-orange?style=for-the-badge)
+</div>
 
-## Objectif
+<br>
 
-Comparer trois stratégies de clustering pour des données mixtes (fonctionnelles + vectorielles) :
+> **Auteur** : Pierre Chambet  
+> **Contexte** : Projet de fin d'études M2 TRIED – CNAM (Laboratoire CEDRIC)
 
-- **Stratégie A** : FPCA → scores + variables Z → k-means
-- **Stratégie B** : Distance pondérée Dω (fonctionnel + vectoriel) → PAM
-- **Stratégie C** : Distance à noyaux DK → PAM
+---
 
-## Structure
+Ce dépôt présente les travaux de recherche et l'implémentation algorithmique d'un pipeline de **clustering (regroupement) pour données mixtes**.
+La particularité de ces données est qu'un même individu est caractérisé simultanément par :
+1. **Une composante fonctionnelle** : Une courbe continue projetée sur un espace de Hilbert $L^2$.
+2. **Une composante vectorielle** : Un vecteur discret classique mesuré dans $\mathbb{R}^p$.
 
+Le défi mathématique fondamental consiste à formuler une géométrie commune pour ces deux espaces sans occulter leur corrélation sous-jacente. Ce projet propose, compare et critique différentes architectures, notamment en proposant une \textbf{hybridation précoce (HFV)}.
+
+## 🧠 Les 4 Stratégies de Clustering Comparées
+
+Le pipeline R implémente et compare rigoureusement différentes méthodes de fusion :
+
+### 1. Architectures d'Hybridation Tardive
+Ces méthodes modélisent des distances sur les variations fonctionnelles ($D_0$, $D_1$) et vectorielles ($D_s$) isolément avant de les regrouper de manière \textit{ad-hoc}.
+
+- **Stratégie A (RS-PCA + $k$-means) :** Extraction des scores des courbes via ACP Fonctionnelle (FPCA). Banalisation des deux modalités par simple concaténation, suivie d'un algorithme $k$-means.
+- **Stratégie B (Distance Additive $D_w$) :** Construction d'une dissimilarité pondérée normalisée combinant l'amplitude, les gradients et les vecteurs :
+  $$ D_w(\alpha,\omega) = \sqrt{\omega \underbrace{\bigl[(1-\alpha)\tilde{D}_0^2 + \alpha\tilde{D}_1^2\bigr]}_{D_p(\alpha)^2} + (1-\omega)\tilde{D}_s^2} $$
+  Suivie d'un Partitioning Around Medoids (PAM).
+- **Stratégie C (Produit de Noyaux $D_K$) :** Exigence stricte de similarité simultanée via la multiplication de noyaux gaussiens $K_f \cdot K_s$ ; la matrice de dissimilarité associée s'écrit :
+  $$ D_K(i,j) = \sqrt{K(i,i) + K(j,j) - 2K(i,j)} $$
+
+### 2. L'Innovation : L'Hybridation Précoce (HFV)
+*Principal apport théorique implémenté permettant d'outrepasser les limites de l'hybridation tardive.*
+Au lieu de fusionner des dissimilarités en surface, l'algorithme "Hybride Fonctionnel-Vectoriel" (HFV) crée un espace hybride fondé sur la covariance croisée en amont de tout maillage géométrique.
+
+*   On estime une **Matrice de Covariance Jointe** unifiant les variances marginales et les variances *croisées*.
+  $$ V = \begin{bmatrix} V_y & V_{yx} \\ V_{xy} & V_x \end{bmatrix} $$
+*   Le ratio de trace garantit l'équilibrage des énergies: $r = \mathrm{tr}(\mathrm{Cov}(\eta)) / \mathrm{tr}(\mathrm{Cov}(\gamma))$.
+*   La diagonalisation offre des composantes informées de l'influence mutuelle des variables, reconstruites dans $L^2$ avant clustering.
+
+---
+
+## 🔬 Découvertes & Diagnostic : "Le Verrou du Non-Supervisé"
+
+Le projet soulève et démontre empiriquement un **Paradoxe de la Silhouette** en contexte non supervisé mixte.
+
+> [!WARNING]
+> La maximisation classique du score de Silhouette moyen pousse les algorithmes à fragmenter arbitrairement la physique des données au profit de "masses rondes irréalistes". Ce biais mène à une chute brutale de l'**Adjusted Rand Index (ARI)** face à la vérité terrain.
+
+**Notre Solution : Instabilité Bootstrap (Fang & Wang)**  
+Au lieu de faire confiance à un critère de densité interne biaisé, le dispositif recherche l'optimum hyper-paramétrique $(\alpha, \omega, k)$ en perturbant les échantillons $B$ fois (rééchantillonnage Bootstrap) et en traquant empiriquement la stabilité des frontières de décision produites.
+
+---
+
+## 🗂️ Structure du Projet
+
+```text
+CNAM/
+├── src/                                  # Algorithmique et Core Pipeline
+│   ├── 00_preprocess_*.R                 # Scripts de parsing selon le jeu
+│   ├── 01_lissage.R                      # Lissage B-splines O(n) et GCV
+│   ├── 02_fpca.R                         # ACP Fonctionnelle (K par variance cumulée ≥ 95%)
+│   ├── 02b_pca_hybride_reconstruction.R  # Modèle théoriqe HFV matriciel
+│   ├── 03_distances.R                    # Moteur de métriques (D0, D1, Dw, DK)
+│   ├── 03b_distances_noyaux_hybrides.R   # Discrétisation spatiale et Noyau HFV
+│   ├── 04_clustering.R                   # PAM / k-means, Benchmarker et évaluations (ARI / Silhouette)
+│   ├── 05_visualisation.R                # Rendus et figures ggplot
+│   └── main.R                            # Contrôleur d'orchestration
+│
+├── docs/                                 # Publications, Soutenances et Rapports
+│   ├── rapport_stage.tex                 # Théorie statistique intégrale
+│   ├── soutenance.tex                    # Slides de la présentation de projet
+│   ├── Makefile                          # Logiciel de compilation LaTeX
+│   └── (exports & generated)             # CSVs bruts et Tableaux TeX auto-générés
+│
+├── experiments/                          # Environnement de Recherche (R&D)
+│   └── 01_instabilite/                   # Procédures lourdes de bootstrap et simulations (Fang & Wang)
+│
+├── data/                                 # Datasets (Growth, Tecator, Canadian Weather injectés via fda)
+└── figures/                              # Graphiques synthétiques produits
 ```
-src/
-├── 00_preprocess.R         Canadian Weather
-├── 00_preprocess_aemet.R   AEMET (73 stations espagnoles)
-├── 00_preprocess_growth.R  Growth (93 enfants, M/F)
-├── 00_preprocess_tecator.R Tecator (215 spectres NIR)
-├── 01_lissage.R            Lissage B-splines pénalisées + GCV
-├── 02_fpca.R               ACP fonctionnelle (K par variance cumulée ≥ 95%)
-├── 03_distances.R          D0, D1, Dp, Ds, Dw, DK (opérations matricielles)
-├── 04_clustering.R         3 stratégies + baselines, ARI + silhouette
-├── 05_visualisation.R      8 figures dans figures/<dataset>/
-├── 02b_pca_hybride_reconstruction.R  ACP hybride HFV (hors main.R par défaut)
-├── 03b_distances_noyaux_hybrides.R   Noyaux hybrides sur reconstructions
-└── main.R                  Pipeline complet (00→05 ; pas 02b/03b)
 
-docs/
-├── resume_donnees_fonctionnelles.tex  Théorie FDA, FPCA, clustering
-├── rapport_distances.tex             Architecture des distances
-├── rapport_canadian_weather.tex      Pipeline + diagnostic complet
-└── rapport_synthese.tex              Résultats multi-dataset, perspectives
+---
 
-data/
-└── shom_celerite_2018.csv  Données SHOM (à télécharger, non versionnées)
+## 🚀 Démarrage Rapide
 
-figures/
-├── canadian_weather/      8 figures
-├── aemet/                 8 figures
-├── growth/                8 figures
-└── tecator/               8 figures
+Ce dépôt est conçu pour être 100% reproductible sans intervention complexe.
 
-experiments/               Protocoles et benchmarks hors pipeline minimal
-├── 01_instabilite/       Exp. 01 — instabilité bootstrap / nselectboot
-├── 03_simulated_hybride/ Exp. 03 — données simulées, ACP hybride + noyaux, CSV résultats
-└── README.md              Inventaire à jour des sous-dossiers
-```
-
-## Démarrage rapide
-
-### 1. Vérifier l'environnement
-
-```r
+### 1. Préparation de l'environnement (R)
+Le script `setup.R` configure vos dépendances (`fda`, `cluster`, `mclust`) pour la reproductibilité :
+```R
 source("setup.R")
 ```
 
-Installe les packages manquants et affiche les versions pour la reproductibilité.
-
-### 2. Lancer le pipeline (Canadian Weather)
-
-```r
+### 2. Exécution du Pipeline complet
+L'orchestrateur `main.R` exécute la chaine intégrale depuis la préparation vectorielle jusqu'aux rapports visuels :
+```R
+DATASET <- "canadian"   # Datasets dispos : "canadian", "tecator", "growth"
 source("src/main.R")
 ```
+*(Le script exportera ses résultats console et génèrera les graphiques dans le dossier `figures/` correspondant au jeu choisi).*
 
-Génère 8 figures dans `figures/canadian_weather/` et affiche le tableau comparatif.
-
-### 3. Changer de dataset
-
-```r
-DATASET <- "aemet"   # ou "growth", "tecator", "canadian"
-source("src/main.R")
-```
-
-## Documentation
-
-- **Théorie** : `docs/resume_donnees_fonctionnelles.pdf` — données fonctionnelles, lissage, FPCA
-- **Architecture** : `docs/rapport_distances.pdf` — toutes les distances, définitions, propriétés
-- **Résultats** : `docs/rapport_canadian_weather.pdf` — pipeline complet + diagnostic
-- **Synthèse** : `docs/rapport_synthese.pdf` — résultats multi-dataset, perspectives
-- **Rapport de stage** : `docs/rapport_stage.tex` → `docs/rapport_stage.pdf` ; cadrage dans `docs/RAPPORT_STAGE.md` (15–20 p., paradoxe silhouette/ARI)
-- **Audit projet** : `docs/AUDIT_PROJET.md` — cartographie docs/expériences/code
-
-### Compilation des rapports LaTeX
-
-Depuis le dossier `docs/` :
-
+### 3. Compilation des Rapports Mathématiques
+Vous pouvez produire les PDFs (`rapport_stage.pdf`, `soutenance.pdf`) incluant les théorèmes matriciels complets :
 ```bash
-cd docs && make
+make latex
 ```
 
-Ou manuellement : `pdflatex rapport_synthese.tex` (deux fois si références croisées).
-
-### Reproductibilité
-
-Exécuter `source("setup.R")` avant le pipeline pour afficher les versions de R et des packages. Le script enregistre automatiquement `sessionInfo()` dans `docs/session_info.txt` pour traçabilité.
+---
+> 💡 *Note de reproductibilité : l'ensemble des grilles d'exploration simulées et études contrefactuelles ARI-opt sont hébergées dans `experiments` pour assurer intégrité et séparation des rôles (Core Vs Recherche).*

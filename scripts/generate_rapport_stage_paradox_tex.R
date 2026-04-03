@@ -19,10 +19,10 @@ find_repo_root <- function() {
   for (r in cand) {
     if (file.exists(file.path(r, "src/main.R"))) return(r)
   }
-  stop("Exécuter ce script depuis la racine du dépôt (ou docs/), ou définir MARS_ROOT.")
+  stop("Exécuter ce script depuis la racine du dépôt (ou docs/), ou définir CNAM_ROOT.")
 }
 
-root <- Sys.getenv("MARS_ROOT", unset = "")
+root <- Sys.getenv("CNAM_ROOT", unset = "")
 if (!nzchar(root)) root <- find_repo_root()
 owd <- setwd(root)
 on.exit(setwd(owd), add = TRUE)
@@ -54,12 +54,11 @@ fmt_pair <- function(a, w) {
   paste0("$(", fmt_fr(a, 2L), ",", fmt_fr(w, 2L), ")$")
 }
 
-datasets <- c("canadian", "aemet", "growth", "tecator")
+datasets <- c("canadian", "growth", "tecator")
 
 libelle_jeu <- function(ds) {
   switch(ds,
     "canadian" = "Canadian Weather",
-    "aemet"    = "AEMET",
     "growth"   = "Growth",
     "tecator"  = "Tecator",
     stop("dataset inconnu : ", ds)
@@ -70,7 +69,6 @@ preprocess_of <- function(ds) {
   switch(ds,
     "canadian" = "src/00_preprocess.R",
     "tecator"  = "src/00_preprocess_tecator.R",
-    "aemet"    = "src/00_preprocess_aemet.R",
     "growth"   = "src/00_preprocess_growth.R",
     stop("dataset inconnu")
   )

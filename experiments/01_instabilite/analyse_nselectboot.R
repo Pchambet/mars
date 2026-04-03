@@ -13,7 +13,7 @@
 
 results_dir <- "experiments/01_instabilite/results"
 fig_dir     <- "experiments/01_instabilite/figures"
-DATASETS    <- c("canadian", "aemet", "growth", "tecator")
+DATASETS    <- c("canadian", "growth", "tecator")
 
 dir.create(fig_dir, showWarnings = FALSE, recursive = TRUE)
 

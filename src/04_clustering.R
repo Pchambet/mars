@@ -193,7 +193,7 @@ comparaison <- data.frame(
 print(comparaison, row.names = FALSE)
 cat("  -> Prêt pour la visualisation (étape 05).\n")
 
-if (Sys.getenv("MARS_EXPORT_COMPARAISON", "") == "1") {
+if (Sys.getenv("CNAM_EXPORT_COMPARAISON", "") == "1") {
   exp_dir <- file.path("docs", "exports")
   dir.create(exp_dir, showWarnings = FALSE, recursive = TRUE)
   fn <- file.path(exp_dir, paste0("comparaison_", dataset_name, ".csv"))

@@ -1,9 +1,9 @@
 # ============================================================================
-# Makefile — Point d'entrée unique pour le projet Mars
+# Makefile — Point d'entrée unique pour le projet CNAM
 # ============================================================================
 #
 # Usage (depuis la racine du projet) :
-#   make all          # Pipeline R (4 datasets) + expérience 01 + compilation LaTeX
+#   make all          # Pipeline R (3 datasets) + expérience 01 + compilation LaTeX
 #   make pipeline     # Uniquement pipeline R (figures, tableaux)
 #   make exp01        # Uniquement expérience 01 (stabilité + nselectboot)
 #   make latex        # Uniquement compilation des rapports LaTeX
@@ -19,10 +19,10 @@
 # --- Cibles principales ---
 all: pipeline exp01 latex
 
-# Pipeline R : 4 datasets → figures/ + sorties console
+# Pipeline R : 3 datasets (Canadian, Growth, Tecator)
 pipeline:
-	@echo ">>> Pipeline R (4 datasets)..."
-	@Rscript -e 'source("setup.R"); for (d in c("canadian","aemet","growth","tecator")) { DATASET <<- d; source("src/main.R") }'
+	@echo ">>> Pipeline R (3 datasets)..."
+	@Rscript -e 'source("setup.R"); for (d in c("canadian","growth","tecator")) { DATASET <<- d; source("src/main.R") }'
 	@echo ">>> Pipeline terminé."
 
 # Expérience 01 : instabilité (nselectboot) + analyses + matrices de confusion
@@ -54,7 +54,7 @@ clean:
 help:
 	@echo "Cibles disponibles :"
 	@echo "  make all      — Pipeline R + Exp01 + LaTeX (complet)"
-	@echo "  make pipeline — Pipeline R uniquement (4 datasets)"
+	@echo "  make pipeline — Pipeline R uniquement (3 datasets)"
 	@echo "  make exp01    — Expérience 01 uniquement"
 	@echo "  make latex    — Compilation LaTeX uniquement"
 	@echo "  make test     — Test rapide (canadian + rapport_synthese)"

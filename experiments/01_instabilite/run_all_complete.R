@@ -7,17 +7,17 @@
 # Ou : source("experiments/01_instabilite/run_all_complete.R")
 # ============================================================================
 
-if (basename(getwd()) != "mars") {
+if (basename(getwd()) != "cnam") {
   if (file.exists("experiments/01_instabilite/run_all_complete.R")) {
     # déjà à la racine
   } else if (file.exists("../experiments/01_instabilite/run_all_complete.R")) {
     setwd("..")
   } else {
-    setwd("/Users/pierre/Desktop/mars")
+    setwd("/Users/pierre/Desktop/cnam")
   }
 }
 
-# Exécution complète : inclure le volet simulé après les 4 jeux réels (voir protocole.md)
+# Exécution complète : inclure le volet simulé après les 3 jeux réels (voir protocole.md)
 if (!exists("RUN_NSELECTBOOT_SIMULATED")) RUN_NSELECTBOOT_SIMULATED <- TRUE
 
 cat("\n")
@@ -25,11 +25,11 @@ cat("═════════════════════════
 cat("  EXÉCUTION COMPLÈTE — Expérience 01 (instabilité / nselectboot)\n")
 cat("══════════════════════════════════════════════════════════════════════\n\n")
 
-cat(">>> Étape 1/4 : nselectboot (4 datasets + volet simulé, B=150, grille 21×21)\n")
+cat(">>> Étape 1/4 : nselectboot (3 datasets + volet simulé, B=150, grille 21×21)\n")
 source("experiments/01_instabilite/run_all_nselectboot.R", local = FALSE)
 cat("\n")
 
-cat(">>> Étape 2/4 : Heatmaps instabilité (nselectboot, 4 jeux réels)\n")
+cat(">>> Étape 2/4 : Heatmaps instabilité (nselectboot, 3 jeux réels)\n")
 source("experiments/01_instabilite/analyse_nselectboot.R", local = FALSE)
 cat("\n")
 

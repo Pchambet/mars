@@ -23,7 +23,6 @@ if (!exists("Y_brut")) {
   preprocess_file <- switch(DATASET,
     "canadian" = "src/00_preprocess.R",
     "tecator"  = "src/00_preprocess_tecator.R",
-    "aemet"    = "src/00_preprocess_aemet.R",
     "growth"   = "src/00_preprocess_growth.R",
     "src/00_preprocess.R"
   )

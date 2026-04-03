@@ -1,9 +1,9 @@
 % ---------------------------------------------------------------------------
 % Fichier généré — NE PAS ÉDITER À LA MAIN
-% Généré le : 2026-03-23 08:28:50 CET
-% Git : 394a048
-% Source : docs/exports/comparaison_*.csv (MARS_EXPORT_COMPARAISON=1 + src/main.R)
-% Regénérer : MARS_EXPORT_COMPARAISON=1 pour canadian, growth, tecator puis
+% Généré le : 2026-03-24 12:05:33 CET
+% Git : f2b3ac8
+% Source : docs/exports/comparaison_*.csv (CNAM_EXPORT_COMPARAISON=1 + src/main.R)
+% Regénérer : CNAM_EXPORT_COMPARAISON=1 pour canadian, growth, tecator puis
 %             Rscript scripts/generate_ch6_three_games_table_tex.R
 % ---------------------------------------------------------------------------
 
@@ -20,16 +20,15 @@
     \cmidrule(lr){3-4}\cmidrule(lr){5-6}\cmidrule(lr){7-8}\cmidrule(lr){9-10}\cmidrule(lr){11-12}\cmidrule(lr){13-14}
     \textbf{Jeu} & $n$ / $k$ & Sil. & ARI & Sil. & ARI & Sil. & ARI & Sil. & ARI & Sil. & ARI & Sil. & ARI \\
     \midrule
-  Canadian Weather & 35 / 4 & 0{,}285 & 0{,}229 & 0{,}448 & 0{,}616 & 0{,}395 & \textbf{0{,}748} & 0{,}448 & 0{,}616 & 0{,}329 & 0{,}686 & 0{,}332 & 0{,}686 \\
-  Growth & 93 / 2 & 0{,}402 & 0{,}115 & 0{,}554 & 0{,}424 & 0{,}360 & \textbf{0{,}682} & 0{,}554 & 0{,}424 & 0{,}261 & 0{,}368 & 0{,}273 & 0{,}368 \\
-  Tecator & 215 / 3 & 0{,}509 & 0{,}151 & 0{,}476 & \textbf{0{,}546} & 0{,}403 & 0{,}439 & 0{,}509 & 0{,}151 & 0{,}265 & 0{,}371 & 0{,}284 & 0{,}374 \\
+  Canadian Weather & 35 / 4 & 0{,}285 & 0{,}229 & 0{,}448 & 0{,}616 & 0{,}395 & 0{,}748 & 0{,}448 & 0{,}616 & 0{,}329 & 0{,}686 & 0{,}332 & 0{,}686 \\
+  Growth & 93 / 2 & 0{,}402 & 0{,}115 & 0{,}554 & 0{,}424 & 0{,}360 & 0{,}682 & 0{,}554 & 0{,}424 & 0{,}261 & 0{,}368 & 0{,}273 & 0{,}368 \\
+  Tecator & 215 / 3 & 0{,}509 & 0{,}151 & 0{,}476 & 0{,}546 & 0{,}403 & 0{,}439 & 0{,}509 & 0{,}151 & 0{,}265 & 0{,}371 & 0{,}284 & 0{,}374 \\
     \bottomrule
   \end{tabular}
   }
-  \caption{Résultats sur trois jeux publics (même protocole, graine $42$).
+  \caption{Résultats sur trois jeux publics.
   Stratégies B et C~: $(\alpha,\omega)$ ou $\alpha$ choisis par silhouette.
-  Colonne \emph{HFV$+\DK$}~: reconstruction par ACP hybride (covariance croisée) puis distance à noyau sur courbes reconstruites et~$Z$ (chapitre~3).
-  \textbf{Gras}~: meilleur ARI par ligne (évaluation à étiquettes).}
+  Colonne \emph{HFV$+\DK$}~: reconstruction par ACP hybride (covariance croisée) puis distance à noyau sur courbes reconstruites et~$Z$ (chapitre~3).}
   \label{tab:resultats_reels}
 \end{table}
 

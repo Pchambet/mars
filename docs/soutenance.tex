@@ -1,0 +1,312 @@
+\documentclass[10pt, compress]{beamer}
+
+\usetheme{Madrid}
+\usecolortheme{default}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{itemize items}[circle]
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{subcaption}
+
+\graphicspath{{figures/}}
+
+% Macros
+\newcommand{\Ltwo}{L^2}
+\newcommand{\Dp}{D_p}
+\newcommand{\Dw}{D_w}
+\newcommand{\DK}{D_K}
+
+\begin{document}
+
+% ==============================================================================
+\begin{frame}
+  \title{Classification non-supervisée de données mixtes}
+  \author{Pierre Chambet}
+  \institute{Master TRIED \\ \vspace{0.5em} {\small Projet long proposé par V. Audigier, F. Bouhadjera et N. Niang \\ CNAM, Laboratoire CEDRIC, équipe MSDMA}}
+  \date{Soutenance de Projet Long}
+  \titlepage
+\end{frame}
+
+% ==============================================================================
+\begin{frame}{1. L'Obstacle Mathématique et les Distances}
+\textbf{Le Problème :}\\
+Regrouper des individus caractérisés par une courbe $X(t) \in \Ltwo$ et un vecteur $Z \in \mathbb{R}^p$.
+
+\vspace{1em}
+Pour y parvenir, on commence par extraire formellement des dissimilarités séparées :
+\begin{itemize}
+    \item $D_0$ : Distance entre courbes (niveau)
+    \item $D_1$ : Distance entre dérivées des courbes (forme)
+    \item $D_s$ : Distance vectorielle classique sur l'espace $\mathbb{R}^p$
+\end{itemize}
+\end{frame}
+
+% ==============================================================================
+\begin{frame}{2. Les Stratégies de Surface}
+
+Comment l'état de l'art tente de fusionner les distances mixtes ?
+
+\vspace{1em}
+\textbf{Stratégie A (Concaténation naïve) :} \\
+On extrait les scores analytiques des courbes (FPCA $\rightarrow \eta$), et on les concatène brutalement avec le vecteur $Z$. 
+
+\vspace{1em}
+\textbf{Stratégie B (Somme pondérée $D_w$) :} \\
+Combinaison euclidienne emboîtée des distances préalablement normalisées :
+$$ \Dw(\alpha,\omega) = \sqrt{\omega \underbrace{\bigl[(1-\alpha)\tilde{D}_0^2 + \alpha\tilde{D}_1^2\bigr]}_{D_p(\alpha)^2} + (1-\omega)\tilde{D}_s^2} $$
+
+\vspace{1em}
+\textbf{Stratégie C (Produit de Noyaux $D_K$) :} \\
+Multiplication des probabilités de similarité plutôt que somme de distances :\\
+$K = K_f \cdot K_s$, où $K_f = \exp(-D_p^2 / 2\sigma_f^2)$.
+$D_K$ est la distance :
+$$D_K(i,j) = \sqrt{K(i,i) + K(j,j) - 2K(i,j)}$$
+\end{frame}
+
+% ==============================================================================
+\begin{frame}{3. La Limite Structurelle Fondamentale}
+
+\vspace{2em}
+\begin{alertblock}{Le Verrou de l'Hybridation Tardive}
+Que l'on additionne, concatène ou multiplie, on fusionne des informations de surface \textbf{après} les avoir calculées indépendamment. 
+\end{alertblock}
+
+\vspace{1em}
+\textbf{Conséquence inévitable :}\\
+On interdit mathématiquement à la courbe d'influencer analytiquement le vecteur. On omet de modéliser et de traiter la \textbf{covariance croisée} inter-modalités en amont.
+\end{frame}
+
+% ==============================================================================
+\begin{frame}{4. La Solution : ACP Hybride (HFV)}
+\textbf{Méthode :}\\
+Diagonaliser une structure jointe en amont du clustering.
+
+\begin{enumerate}
+    \item \textbf{Réduction séparée} : Scores FPCA ($\eta$) et ACP classique ($\gamma$).
+    \item \textbf{Ratio d'équilibrage $r$} : Rapport des variances.
+    \item \textbf{Covariance Jointe $V$} :
+    \[
+      V = \begin{bmatrix} V_x & \mathbf{V_{xz}} \\ \mathbf{V_{zx}} & V_z \end{bmatrix}
+    \]
+    {\small $x$ = bloc fonctionnel (courbes), \quad $z$ = bloc vectoriel ($Z$)}
+\end{enumerate}
+
+\vspace{0.5em}
+Les vecteurs propres de $V$ mélangent \textbf{par construction} composantes analytiques et coefficients discrets, autorisant une reconstruction informée dans le sous-espace $L^2$.
+\end{frame}
+
+% ==============================================================================
+\begin{frame}{5. Le Matériel d'Évaluation (Données simulées et réelles)}
+Nous utilisons des données labellisées.
+
+\vspace{0.5em}
+
+\textbf{1. Les Données Simulées (4 Scénarios)} \\
+Simulation du niveau des courbes ($D_0$), de la forme ($D_1$) et du vecteur $Z$ :
+\begin{itemize}
+    \item \textbf{S1} : Signal fort et covariance mixte.
+    \item \textbf{S2} : Bruit vectoriel fort.
+    \item \textbf{S3} : Bruit fonctionnel fort.
+    \item \textbf{S4} : Bruit dominant.
+\end{itemize}
+\vspace{0.5em}
+\textbf{2. Les datasets réels} \\
+\begin{table}
+\centering
+\renewcommand{\arraystretch}{1.1}
+\resizebox{1\textwidth}{!}{
+\begin{tabular}{l p{3.4cm} p{3.4cm} l}
+\toprule
+\textbf{Dataset} & \textbf{Courbe $X(t)$} & \textbf{Vecteur $Z$} & \textbf{Cible ($K$)} \\
+\midrule
+\textbf{Canadian Weather} & Température annuelle & Latitude, Long., Précip. & \textbf{4 régions} \\
+\textbf{Berkeley Growth} & Courbe de croissance & Taille finale, poids & \textbf{2 sexes} \\
+\textbf{Tecator} & Spectre d'absorbance & Eau, protéines & \textbf{3 taux de gras} \\
+\bottomrule
+\end{tabular}}
+\end{table}
+\end{frame}
+
+% ==============================================================================
+\begin{frame}{6. Le Problème de la Silhouette}
+
+Les méthodes non-supervisées optimisent leurs paramètres ($\alpha$, $\omega$) en aveugle grâce à la \textbf{Silhouette moyenne}.
+
+\vspace{1em}
+\begin{alertblock}{Le Paradoxe Observé}
+Le couple $(\alpha, \omega)$ maximisant la Silhouette s'écarte systématiquement de l'optimum maximisant la véritable structure physique (ARI terrain).
+\end{alertblock}
+
+\vspace{0.5em}
+\textbf{Interprétation :}\\
+Pour gonfler mathématiquement son score, la silhouette privilégie aveuglément des amas denses et sphériques fragmentant ainsi les structures de formes variables.
+\end{frame}
+
+% ==============================================================================
+\begin{frame}{7. Preuve Empirique du Problème}
+
+Évaluation contrefactuelle sur la Stratégie B : perte d'ARI causée par l'optimisation aveugle (Silhouette) vs optimisation Oracle (ARI).
+
+\vspace{1em}
+\begin{table}
+\centering
+\renewcommand{\arraystretch}{1.3}
+\resizebox{0.95\textwidth}{!}{
+\begin{tabular}{lccc}
+\toprule
+\textbf{Jeu de données} & \textbf{opt-Silhouette} & \textbf{opt-ARI} & \textbf{Chute ($\Delta$ ARI)} \\
+\midrule
+\textbf{Canadian Weather} & $0{.}616$ & $0{.}898$ & \textbf{${-} 0{.}283$} \\
+\textbf{Berkeley Growth} & $0{.}424$ & $0{.}756$ & \textbf{${-} 0{.}332$} \\
+\textbf{Tecator} & $0{.}151$ & $0{.}626$ & \textbf{${-} 0{.}475$} \\
+\bottomrule
+\end{tabular}}
+\end{table}
+
+\vspace{0.5em}
+\textbf{Conséquence :} L'architecture non-supervisée s'effondre systématiquement en l'absence de compacité quasi-parfaite.
+\end{frame}
+
+% ==============================================================================
+\begin{frame}{8. L'Instabilité Bootstrap (Canadian Weather)}
+
+Face à la défaillance de la silhouette, la sécurisation du modèle passe obligatoirement par \textbf{l'Instabilité Bootstrap de Fang \& Wang} (Moins d'instabilité = rouge $\rightarrow$ bleu).
+
+\vspace{1em}
+\begin{figure}
+  \centering
+  \includegraphics[width=0.75\textwidth]{nselectboot_heatmap_canadian.png}
+  \caption{Canadian Weather (4 Régions)}
+\end{figure}
+
+Les zones idéales $(\alpha, \omega)$ (croix bleues) fluctuent massivement selon le jeu de données.
+\end{frame}
+
+% ==============================================================================
+\begin{frame}{9. Instabilité Bootstrap (Growth \& Tecator)}
+
+
+\vspace{1em}
+\begin{figure}
+  \centering
+  \begin{subfigure}{0.48\textwidth}
+    \includegraphics[width=\linewidth]{nselectboot_heatmap_growth.png}\caption{Berkeley Growth (Sexe)}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.48\textwidth}
+    \includegraphics[width=\linewidth]{nselectboot_heatmap_tecator.png}\caption{Tecator (Gras)}
+  \end{subfigure}
+\end{figure}
+\end{frame}
+
+% ==============================================================================
+\begin{frame}{10. Instabilité Bootstrap (Simulations S1 \& S2)}
+
+Evaluation de Fang \& Wang sur nos générateurs de simulation :
+\vspace{1em}
+\begin{figure}
+  \centering
+  \begin{subfigure}{0.48\textwidth}
+    \includegraphics[width=\linewidth]{nselectboot_heatmap_sim_S1_seed1.png}\caption{S1}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.48\textwidth}
+    \includegraphics[width=\linewidth]{nselectboot_heatmap_sim_S2_seed1.png}\caption{S2 (Signal fonctionnel fort)}
+  \end{subfigure}
+\end{figure}
+
+L'invariant structurel est retrouvé par l'instabilité (la zone bleue de faible instabilité s'aligne bien avec le vrai nombre de classes $K=3$).
+\end{frame}
+
+% ==============================================================================
+\begin{frame}{11. Instabilité Bootstrap (Simulations S3 \& S4)}
+
+Dès qu'on approche du scénario S4 (bruit total dominant), l'invariant structurel s'effondre :
+\vspace{1em}
+\begin{figure}
+  \centering
+  \begin{subfigure}{0.48\textwidth}
+    \includegraphics[width=\linewidth]{nselectboot_heatmap_sim_S3_seed1.png}\caption{S3 (Signal vectoriel fort)}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.48\textwidth}
+    \includegraphics[width=\linewidth]{nselectboot_heatmap_sim_S4_seed1.png}\caption{S4 (Bruit total)}
+  \end{subfigure}
+\end{figure}
+
+\end{frame}
+
+% ==============================================================================
+\begin{frame}{12. Résultats Globaux (Scores ARI Moyens)}
+
+Clustering sur les données simulées :
+
+\begin{table}
+\centering
+\resizebox{0.95\textwidth}{!}{
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Méthode} & \textbf{S1} & \textbf{S2} & \textbf{S3} & \textbf{S4} & \textbf{Moyenne} \\
+\midrule
+Stratégie A (FPCA$+Z$)        & $0{.}782$ & $0{.}524$ & $0{.}623$ & $0{.}315$ & $0{.}561$ \\
+Stratégie B ($\Dw$)           & $0{.}873$ & $0{.}873$ & $0{.}239$ & $0{.}238$ & $0{.}556$ \\
+Stratégie C ($\DK$)           & $\mathbf{0{.}938}$ & $\mathbf{0{.}887}$ & $0{.}464$ & $0{.}317$ & $\mathbf{0{.}651}$ \\
+\midrule
+HFV + $\DK$                   & $0{.}897$ & $0{.}802$ & $0{.}433$ & $0{.}301$ & $0{.}608$ \\
+\midrule
+Baseline $D_0$ (Niveau seul)  & $0{.}830$ & $0{.}830$ & $0{.}226$ & $0{.}226$ & $0{.}528$ \\
+Baseline $D_s$ (Vecteur seul) & $0{.}567$ & $0{.}333$ & $\mathbf{0{.}511}$ & $0{.}247$ & $0{.}414$ \\
+\bottomrule
+\end{tabular}}
+\end{table}
+
+\textbf{Constats :}
+\begin{itemize}
+    \item HFV et Stratégie C mènent dès que le signal mixte est présent (S1, S2).
+    \item L'hybridation échoue à restaurer les classes si le signal faiblit uniformément (S4).
+\end{itemize}
+\end{frame}
+
+% ==============================================================================
+\begin{frame}{13. Résultats sur les Jeux Réels Etiquetés}
+
+Clustering sur les données réelles :
+\begin{table}
+\centering
+\resizebox{1\textwidth}{!}{
+\begin{tabular}{l ccc c cc}
+\toprule
+\textbf{Jeu} & \textbf{Strat.A} & \textbf{Strat.B} & \textbf{Strat.C} & \textbf{HFV} & \textbf{Base $D_0$} & \textbf{Base $D_s$} \\
+\midrule
+Canadian (Régions) & $\mathbf{0{.}748}$ & $0{.}616$ & $0{.}686$ & $0{.}686$ & $0{.}229$ & $0{.}616$ \\
+Growth (Sexe)      & $\mathbf{0{.}682}$ & $0{.}424$ & $0{.}368$ & $0{.}368$ & $0{.}115$ & $0{.}424$ \\
+Tecator (Gras)     & $0{.}439$ & $0{.}151$ & $0{.}371$ & $0{.}374$ & $0{.}151$ & $\mathbf{0{.}546}$ \\
+\bottomrule
+\end{tabular}}
+\end{table}
+
+\textbf{La Leçon de Tecator :}
+Ici, seule la composition chimique discrète $D_s$ sépare les individus. Forcer l'hybridation avec la courbe d'absorbance \emph{nuit} au résultat.
+\end{frame}
+
+% ==============================================================================
+\begin{frame}{14. Synthèse}
+
+\begin{block}{Validation d'Architecture}
+L'ACP Hybride (HFV) apporte une solution théorique robuste à la liaison $V_{yx}$ entre courbes et vecteurs, tenant tête empiriquement aux noyaux $D_K$ classiques.
+\end{block}
+
+\vspace{0.5em}
+\begin{alertblock}{La limite fondamentale du pur Non-Supervisé}
+La Silhouette dévaste trop souvent les géométries variables pour maximiser des "masses rondes" irréalistes.
+\end{alertblock}
+
+\end{frame}
+
+% ==============================================================================
+\end{document}

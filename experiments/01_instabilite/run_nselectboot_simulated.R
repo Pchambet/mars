@@ -5,7 +5,7 @@
 # Complément contrôlé : k_vrai et labels connus (Cas2_deriv).
 # N’altère pas les scripts ni les sorties de experiments/03_simulated_hybride/.
 #
-# Paramètres nselectboot — PARITÉ avec les 4 jeux réels (run_nselectboot.R) :
+# Paramètres nselectboot — PARITÉ avec les 3 jeux réels (run_nselectboot.R) :
 #   B_NSELECT = 150, ALPHAS_NB = OMEGAS_NB = seq(0, 1, by = 0.05) [21×21], K_RANGE = 2:6
 #   Toute autre grille / B doit être explicitement levée avec NSELECTBOOT_SIM_RELAXED <- TRUE
 #   (usage réservé au débogage — pas comparable aux résultats réels).
@@ -39,7 +39,7 @@ if (!exists("NSELECTBOOT_SIM_RELAXED")) NSELECTBOOT_SIM_RELAXED <- FALSE
 .ref_krange <- 2:6
 if (!isTRUE(NSELECTBOOT_SIM_RELAXED)) {
   if (length(B_NSELECT) != 1L || as.integer(B_NSELECT) != 150L) {
-    stop("run_nselectboot_simulated : B_NSELECT doit être 150 (identique aux 4 jeux réels). ",
+    stop("run_nselectboot_simulated : B_NSELECT doit être 150 (identique aux 3 jeux réels). ",
          "Débogage uniquement : NSELECTBOOT_SIM_RELAXED <- TRUE avant source().")
   }
   if (length(ALPHAS_NB) != 21L || length(OMEGAS_NB) != 21L) {
@@ -83,7 +83,7 @@ cat("═════════════════════════
 cat("  EXPÉRIENCE 01 — NSELECTBOOT (Fang-Wang) — DONNÉES SIMULÉES (exp. 3)\n")
 cat("══════════════════════════════════════════════════════════════════════\n\n")
 cat(sprintf("  B = %d, k ∈ {%s}\n", B_NSELECT, paste(K_RANGE, collapse = ",")))
-cat(sprintf("  Grille (α, ω) : %d × %d points (identique run_nselectboot.R / 4 jeux réels)\n",
+cat(sprintf("  Grille (α, ω) : %d × %d points (identique run_nselectboot.R / 3 jeux réels)\n",
             length(ALPHAS_NB), length(OMEGAS_NB)))
 if (isTRUE(NSELECTBOOT_SIM_RELAXED)) {
   cat("  *** NSELECTBOOT_SIM_RELAXED = TRUE : grille/B comparables aux jeux réels ? NON ***\n")

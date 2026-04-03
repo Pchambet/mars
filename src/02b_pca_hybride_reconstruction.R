@@ -25,7 +25,7 @@ cat("\n--- Étape 02b : ACP hybride + reconstruction fonctionnelle ---\n")
   switch(dataset,
     "canadian" = "src/00_preprocess.R",
     "tecator"  = "src/00_preprocess_tecator.R",
-    "aemet"    = "src/00_preprocess_aemet.R",
+    "growth"   = "src/00_preprocess_growth.R",
     "growth"   = "src/00_preprocess_growth.R",
     stop(sprintf("Dataset inconnu '%s'.", dataset))
   )

@@ -4,9 +4,9 @@
 
 Alignement sur l’expérience 03 (`benchmark_all_methods_simulated.R`) : mêmes scénarios **S1–S4**, mêmes paramètres `NC_SIM`, `DELTA_SIM`, `SIGMA2_SIM`, `TAU2_SIM`, `P_Z_SIM` (défaut 20). Les scripts de l’exp. 3 ne sont **pas** modifiés.
 
-### nselectboot — même précision que les 4 jeux réels
+### nselectboot — même précision que les 3 jeux réels
 
-Pour une **comparaison** avec Canadian, AEMET, Growth et Tecator, le volet simulé utilise **exactement** les mêmes réglages que `run_nselectboot.R` :
+Pour une **comparaison** avec Canadian, Growth et Tecator (périmètre aligné sur le mémoire), le volet simulé utilise **exactement** les mêmes réglages que `run_nselectboot.R` :
 
 | Paramètre | Valeur |
 |-----------|--------|
@@ -30,7 +30,7 @@ Le script **`run_simulated_instabilite_only.R`** applique par défaut un **mode 
 
 - Une grille **21×21** × **B = 150** × plusieurs **seeds** est coûteuse (plusieurs heures selon machine).
 - Par défaut : `SEEDS_SIM <- 1L` dans `run_nselectboot_simulated.R` ; pour reproduire le design exp. 3 : `SEEDS_SIM <- 1:50` avant `source()`.
-- `run_all_nselectboot.R` : le volet simulé est **désactivé** par défaut (`RUN_NSELECTBOOT_SIMULATED <- FALSE`) pour garder un run rapide sur les 4 jeux réels. `run_all_complete.R` définit `RUN_NSELECTBOOT_SIMULATED <- TRUE` pour enchaîner le simulé après les 4 jeux.
+- `run_all_nselectboot.R` : le volet simulé est **désactivé** par défaut (`RUN_NSELECTBOOT_SIMULATED <- FALSE`) pour garder un run rapide sur les 3 jeux réels. `run_all_complete.R` définit `RUN_NSELECTBOOT_SIMULATED <- TRUE` pour enchaîner le simulé après ces jeux.
 
 ## Figures
 

@@ -1,10 +1,10 @@
 # ============================================================================
-# Expérience 01 — nselectboot sur les 4 datasets
+# Expérience 01 — nselectboot sur les 3 datasets réels
 # ============================================================================
 #
 # Usage : source("experiments/01_instabilite/run_all_nselectboot.R")
 #
-# Volet simulé (aligné exp. 3) : après les 4 jeux réels, optionnel (coûteux).
+# Volet simulé (aligné exp. 3) : après les 3 jeux réels, optionnel (coûteux).
 #   RUN_NSELECTBOOT_SIMULATED <- TRUE   # avant source, pour enrichir l’exp. 1
 #
 # ============================================================================
@@ -13,11 +13,11 @@ if (!exists("RUN_NSELECTBOOT_SIMULATED")) RUN_NSELECTBOOT_SIMULATED <- FALSE
 
 cat("\n")
 cat("══════════════════════════════════════════════════════════════════════\n")
-cat("  EXPÉRIENCE 01 — NSELECTBOOT (Fang-Wang) sur 4 datasets\n")
+cat("  EXPÉRIENCE 01 — NSELECTBOOT (Fang-Wang) sur 3 datasets réels\n")
 cat("══════════════════════════════════════════════════════════════════════\n\n")
 
-# Grille 21×21, B=150 — référence unique pour les 4 jeux réels ET le volet simulé
-DATASETS <- c("canadian", "aemet", "growth", "tecator")
+# Grille 21×21, B=150 — référence unique pour les 3 jeux réels ET le volet simulé
+DATASETS <- c("canadian", "growth", "tecator")
 B_NSELECT <- 150L
 ALPHAS_NB <- seq(0, 1, by = 0.05)
 OMEGAS_NB <- seq(0, 1, by = 0.05)

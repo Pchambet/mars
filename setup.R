@@ -15,7 +15,7 @@ cat(sprintf("R version : %s\n", R.version.string))
 # --- Packages requis ---
 packages_requis <- c(
     "fda",      # Analyse de données fonctionnelles (Ramsay & Silverman)
-    "fda.usc",  # Données AEMET, Tecator (et fda pour Canadian/Growth)
+    "fda.usc",  # Jeux Tecator et utilitaires (et fda pour Canadian/Growth)
     "cluster",  # PAM (Partitioning Around Medoids) + silhouette
     "mclust"    # adjustedRandIndex (ARI)
 )

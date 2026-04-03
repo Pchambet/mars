@@ -15,8 +15,8 @@ MODE="${1:-all}"
 
 case "$MODE" in
   pipeline)
-    echo ">>> Pipeline R (4 datasets)..."
-    Rscript -e 'source("setup.R"); for (d in c("canadian","aemet","growth","tecator")) { DATASET <<- d; source("src/main.R") }'
+    echo ">>> Pipeline R (3 datasets)..."
+    Rscript -e 'source("setup.R"); for (d in c("canadian","growth","tecator")) { DATASET <<- d; source("src/main.R") }'
     ;;
   exp01)
     echo ">>> Expérience 01..."
@@ -28,8 +28,8 @@ case "$MODE" in
     make -C experiments/01_instabilite rapport_instabilite.pdf
     ;;
   all)
-    echo ">>> Pipeline R..."
-    Rscript -e 'source("setup.R"); for (d in c("canadian","aemet","growth","tecator")) { DATASET <<- d; source("src/main.R") }'
+    echo ">>> Pipeline R (3 datasets)..."
+    Rscript -e 'source("setup.R"); for (d in c("canadian","growth","tecator")) { DATASET <<- d; source("src/main.R") }'
     echo ">>> Expérience 01..."
     Rscript -e 'source("experiments/01_instabilite/run_all_complete.R")'
     echo ">>> LaTeX..."

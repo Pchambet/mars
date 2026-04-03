@@ -11,11 +11,10 @@ library(cluster)
 library(mclust)
 
 results_dir <- "experiments/01_instabilite/results"
-DATASETS    <- c("canadian", "aemet", "growth", "tecator")
-k_vrai      <- c(canadian = 4, aemet = 4, growth = 2, tecator = 3)
+DATASETS    <- c("canadian", "growth", "tecator")
+k_vrai      <- c(canadian = 4, growth = 2, tecator = 3)
 preprocess  <- c(
   canadian = "src/00_preprocess.R",
-  aemet    = "src/00_preprocess_aemet.R",
   growth   = "src/00_preprocess_growth.R",
   tecator  = "src/00_preprocess_tecator.R"
 )

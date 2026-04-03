@@ -16,7 +16,7 @@ paradox-tex:
 	cd .. && Rscript scripts/generate_rapport_stage_paradox_tex.R
 
 # Tableau ch.6 (trois jeux réels) — exécuter d'abord le pipeline avec
-# MARS_EXPORT_COMPARAISON=1 pour canadian, growth, tecator
+# CNAM_EXPORT_COMPARAISON=1 pour canadian, growth, tecator
 ch6-real-tex:
 	cd .. && Rscript scripts/generate_ch6_three_games_table_tex.R
 

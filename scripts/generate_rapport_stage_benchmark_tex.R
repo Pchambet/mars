@@ -17,9 +17,9 @@ find_repo_root <- function() {
     p <- file.path(r, "experiments/03_simulated_hybride/results/metrics_summary_by_scenario_method.csv")
     if (file.exists(p)) return(r)
   }
-  stop("Exécuter ce script depuis la racine du dépôt (ou docs/), ou définir MARS_ROOT.")
+  stop("Exécuter ce script depuis la racine du dépôt (ou docs/), ou définir CNAM_ROOT.")
 }
-root <- Sys.getenv("MARS_ROOT", unset = "")
+root <- Sys.getenv("CNAM_ROOT", unset = "")
 if (!nzchar(root)) root <- find_repo_root()
 
 summary_path <- file.path(
@@ -62,17 +62,21 @@ wide <- list()
 for (m in methods_order) {
   row_g <- glob[glob$method == m, , drop = FALSE]
   if (nrow(row_g) != 1L) stop("Méthode manquante dans global: ", m)
-  cells <- character(length(scenarios))
+  cells_ari <- character(length(scenarios))
+  cells_sil <- character(length(scenarios))
   for (i in seq_along(scenarios)) {
     sc <- scenarios[i]
-    sub <- summ[summ$scenario == sc & summ$method == m, "ari_mean", drop = TRUE]
-    if (length(sub) != 1L) stop("Valeur manquante: ", sc, " / ", m)
-    cells[i] <- fmt_fr(sub)
+    sub <- summ[summ$scenario == sc & summ$method == m, , drop = FALSE]
+    if (nrow(sub) != 1L) stop("Ligne manquante: ", sc, " / ", m)
+    cells_ari[i] <- fmt_fr(sub$ari_mean)
+    cells_sil[i] <- fmt_fr(sub$silhouette_mean)
   }
   wide[[m]] <- list(
     label = labels[[m]],
-    cells = cells,
-    moy = fmt_fr(row_g$ari)
+    cells_ari = cells_ari,
+    cells_sil = cells_sil,
+    moy_ari = fmt_fr(row_g$ari),
+    moy_sil = fmt_fr(row_g$silhouette)
   )
 }
 
@@ -96,23 +100,34 @@ lines <- c(
   "% ---------------------------------------------------------------------------"
 )
 
-lines <- c(lines, "", "\\begin{table}[H]", "\\centering", "\\renewcommand{\\arraystretch}{1.25}")
+lines <- c(lines, "", "\\begin{table}[H]", "\\centering", "\\small", "\\renewcommand{\\arraystretch}{1.2}")
 
 tab <- c(
-  "\\begin{tabular}{lcccc|c}",
+  "\\begin{tabular}{@{}l*{4}{cc}|cc@{}}",
   "  \\toprule",
-  "  \\textbf{Méthode} & \\textbf{S1} & \\textbf{S2} & \\textbf{S3} & \\textbf{S4} & \\textbf{Moy. glob.} \\\\",
+  "  \\textbf{Méthode}",
+  "  & \\multicolumn{2}{c}{\\textbf{S1}} & \\multicolumn{2}{c}{\\textbf{S2}}",
+  "  & \\multicolumn{2}{c}{\\textbf{S3}} & \\multicolumn{2}{c}{\\textbf{S4}}",
+  "  & \\multicolumn{2}{c}{\\textbf{Moy. glob.}} \\\\",
+  "  \\cmidrule(lr){2-3}\\cmidrule(lr){4-5}\\cmidrule(lr){6-7}\\cmidrule(lr){8-9}\\cmidrule(lr){10-11}",
+  "  & \\multicolumn{1}{c}{ARI} & $\\bar{s}$",
+  "  & \\multicolumn{1}{c}{ARI} & $\\bar{s}$",
+  "  & \\multicolumn{1}{c}{ARI} & $\\bar{s}$",
+  "  & \\multicolumn{1}{c}{ARI} & $\\bar{s}$",
+  "  & \\multicolumn{1}{c}{ARI} & $\\bar{s}$ \\\\",
   "  \\midrule"
 )
 
 for (m in methods_order) {
   w <- wide[[m]]
+  parts <- character()
+  for (i in seq_along(scenarios)) {
+    parts <- c(parts, w$cells_ari[i], w$cells_sil[i])
+  }
+  parts <- c(parts, w$moy_ari, w$moy_sil)
   tab <- c(
     tab,
-    paste0(
-      "  ", w$label, " & ",
-      paste(w$cells, collapse = " & "), " & ", w$moy, " \\\\"
-    )
+    paste0("  ", w$label, " & ", paste(parts, collapse = " & "), " \\\\")
   )
 }
 
@@ -126,13 +141,14 @@ lines <- c(lines, tab)
 
 lines <- c(
   lines,
-  "\\caption{ARI moyen par scénario et par méthode ($50$ répétitions par scénario,",
-  "  $n=300$, $K=3$, $p=20$). Grille $\\alpha$ (et $(\\alpha,\\omega)$ pour la stratégie~B)",
-  "  : $21$ valeurs sur $[0,1]$ (pas $0{,}05$, soit $21\\times 21$ couples pour~B).",
+  "\\caption{ARI moyen (évaluation) et silhouette moyenne $\\bar{s}$ par scénario et par méthode",
+  "  ($50$ répétitions par scénario, $n=300$, $K=3$, $p=20$).",
+  "  Grille $\\alpha$ (et $(\\alpha,\\omega)$ pour la stratégie~B)~: $21$ valeurs sur $[0,1]$",
+  "  (pas $0{,}05$, soit $21\\times 21$ couples pour~B).",
   "  Hyperparamètres choisis par silhouette (stratégies B, C, $D_f(\\alpha)$)~;",
   "  l'ARI sert uniquement à l'évaluation.",
-  "  \\emph{Moy. glob.}~: moyenne sur l'ensemble des $200$ runs ($4\\times 50$), fichier",
-  "  \\texttt{metrics\\_global\\_average\\_by\\_method.csv}.}",
+  "  \\emph{Moy. glob.}~: moyennes sur l'ensemble des $200$ runs ($4\\times 50$),",
+  "  fichier \\texttt{metrics\\_global\\_average\\_by\\_method.csv}.}",
   "\\label{tab:ari_scenarios}"
 )
 

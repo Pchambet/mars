@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 # Lit docs/exports/comparaison_{canadian_weather,growth,tecator}.csv
-# (produits par MARS_EXPORT_COMPARAISON=1 + src/main.R) et génère
+# (produits par CNAM_EXPORT_COMPARAISON=1 + src/main.R) et génère
 # docs/generated/ch6_real_three_games_table.tex
 
 find_repo_root <- function() {
@@ -11,7 +11,7 @@ find_repo_root <- function() {
   stop("Exécuter depuis la racine du dépôt.")
 }
 
-root <- Sys.getenv("MARS_ROOT", unset = "")
+root <- Sys.getenv("CNAM_ROOT", unset = "")
 if (!nzchar(root)) root <- find_repo_root()
 
 fmt_fr <- function(x, digits = 3L) {
@@ -34,7 +34,7 @@ files <- list(
 for (nm in names(files)) {
   if (!file.exists(files[[nm]])) {
     stop("Fichier manquant : ", files[[nm]],
-         "\nLancer : MARS_EXPORT_COMPARAISON=1 avec DATASET pour chaque jeu.")
+         "\nLancer : CNAM_EXPORT_COMPARAISON=1 avec DATASET pour chaque jeu.")
   }
 }
 
@@ -57,22 +57,17 @@ for (r in seq_len(nrow(meta))) {
   sc <- df[grepl("^C \\(DK", df$Strategie), ][1, ]
   sh <- pick(df, "HFV + DK (reconstr.)")
 
-  aris <- c(d0$ARI, ds$ARI, sa$ARI, sb$ARI, sc$ARI, sh$ARI)
-  ib <- which.max(aris)
-
-  cell <- function(sil, ari, idx, j) {
-    ari_tex <- fmt_fr(ari)
-    if (j == ib) ari_tex <- paste0("\\textbf{", ari_tex, "}")
-    paste(fmt_fr(sil), "&", ari_tex)
+  cell <- function(sil, ari) {
+    paste(fmt_fr(sil), "&", fmt_fr(ari))
   }
 
   parts <- c(
-    cell(d0$Silhouette, d0$ARI, ib, 1),
-    cell(ds$Silhouette, ds$ARI, ib, 2),
-    cell(sa$Silhouette, sa$ARI, ib, 3),
-    cell(sb$Silhouette, sb$ARI, ib, 4),
-    cell(sc$Silhouette, sc$ARI, ib, 5),
-    cell(sh$Silhouette, sh$ARI, ib, 6)
+    cell(d0$Silhouette, d0$ARI),
+    cell(ds$Silhouette, ds$ARI),
+    cell(sa$Silhouette, sa$ARI),
+    cell(sb$Silhouette, sb$ARI),
+    cell(sc$Silhouette, sc$ARI),
+    cell(sh$Silhouette, sh$ARI)
   )
   lines_row <- c(lines_row, paste0(
     "  ", meta$label[r], " & ", meta$nk[r], " & ",
@@ -94,8 +89,8 @@ hdr <- c(
   "% Fichier généré — NE PAS ÉDITER À LA MAIN",
   paste0("% Généré le : ", stamp),
   if (length(git_sha)) paste0("% Git : ", git_sha[1]) else "% Git : (non disponible)",
-  "% Source : docs/exports/comparaison_*.csv (MARS_EXPORT_COMPARAISON=1 + src/main.R)",
-  "% Regénérer : MARS_EXPORT_COMPARAISON=1 pour canadian, growth, tecator puis",
+  "% Source : docs/exports/comparaison_*.csv (CNAM_EXPORT_COMPARAISON=1 + src/main.R)",
+  "% Regénérer : CNAM_EXPORT_COMPARAISON=1 pour canadian, growth, tecator puis",
   "%             Rscript scripts/generate_ch6_three_games_table_tex.R",
   "% ---------------------------------------------------------------------------",
   "",
@@ -118,10 +113,9 @@ ftr <- c(
   "    \\bottomrule",
   "  \\end{tabular}",
   "  }",
-  "  \\caption{Résultats sur trois jeux publics (même protocole, graine $42$).",
+  "  \\caption{Résultats sur trois jeux publics.",
   "  Stratégies B et C~: $(\\alpha,\\omega)$ ou $\\alpha$ choisis par silhouette.",
-  "  Colonne \\emph{HFV$+\\DK$}~: reconstruction par ACP hybride (covariance croisée) puis distance à noyau sur courbes reconstruites et~$Z$ (chapitre~3).",
-  "  \\textbf{Gras}~: meilleur ARI par ligne (évaluation à étiquettes).}",
+  "  Colonne \\emph{HFV$+\\DK$}~: reconstruction par ACP hybride (covariance croisée) puis distance à noyau sur courbes reconstruites et~$Z$ (chapitre~3).}",
   "  \\label{tab:resultats_reels}",
   "\\end{table}",
   ""

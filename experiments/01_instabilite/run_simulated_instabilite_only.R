@@ -1,5 +1,5 @@
 # ============================================================================
-# Expérience 01 — Volet simulé uniquement (sans toucher aux 4 jeux réels)
+# Expérience 01 — Volet simulé uniquement (sans toucher aux 3 jeux réels)
 # ============================================================================
 #
 # Enchaîne : nselectboot sur données simulées → heatmaps dans figures/
@@ -15,18 +15,18 @@
 #
 # ============================================================================
 
-if (basename(getwd()) != "mars") {
+if (basename(getwd()) != "cnam") {
   if (file.exists("experiments/01_instabilite/run_simulated_instabilite_only.R")) {
     # déjà à la racine
   } else if (file.exists("../experiments/01_instabilite/run_simulated_instabilite_only.R")) {
     setwd("..")
   } else {
-    setwd("/Users/pierre/Desktop/mars")
+    setwd("/Users/pierre/Desktop/cnam")
   }
 }
 
 args <- commandArgs(trailingOnly = TRUE)
-use_full <- "--full" %in% args || identical(Sys.getenv("MARS_SIM_NSELECTBOOT_FULL", ""), "1")
+use_full <- "--full" %in% args || identical(Sys.getenv("CNAM_SIM_NSELECTBOOT_FULL", ""), "1")
 
 if (use_full) {
   cat(">>> Mode COMPLET : grille 21×21, B=150 (aligné jeux réels) — très long.\n\n")
@@ -38,7 +38,7 @@ if (use_full) {
   ALPHAS_NB <- seq(0, 1, by = 0.2)   # 6 points → 6×6 = 36 couples par scénario
   OMEGAS_NB <- seq(0, 1, by = 0.2)
   K_RANGE <- 2:6
-  cat(">>> Mode RAPIDE (~15–25 min) : grille 6×6 (pas 0,2), B=60 — pas le même protocole que les 4 jeux réels (21×21, B=150).\n\n")
+  cat(">>> Mode RAPIDE (~15–25 min) : grille 6×6 (pas 0,2), B=60 — pas le même protocole que les 3 jeux réels (21×21, B=150).\n\n")
   cat(">>> Étape 1/2 : nselectboot simulé\n")
 }
 

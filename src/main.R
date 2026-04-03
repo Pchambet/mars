@@ -5,7 +5,6 @@
 # Datasets disponibles :
 #   "canadian"  → Canadian Weather (35 stations, 365 jours, 4 régions)
 #   "tecator"   → Tecator (215 spectres NIR, 100 λ, 3 classes de gras)
-#   "aemet"     → AEMET (73 stations espagnoles, 365 jours, 4 zones)
 #   "growth"    → Growth (93 enfants, 31 âges, 2 classes M/F)
 #
 # Usage :
@@ -34,9 +33,8 @@ set.seed(42)
 preprocess_file <- switch(DATASET,
   "canadian" = "src/00_preprocess.R",
   "tecator"  = "src/00_preprocess_tecator.R",
-  "aemet"    = "src/00_preprocess_aemet.R",
   "growth"   = "src/00_preprocess_growth.R",
-  stop(sprintf("Dataset inconnu : '%s'. Choix : canadian, tecator, aemet, growth", DATASET))
+  stop(sprintf("Dataset inconnu : '%s'. Choix : canadian, tecator, growth", DATASET))
 )
 source(preprocess_file)
 

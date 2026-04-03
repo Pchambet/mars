@@ -38,7 +38,7 @@ On veut choisir $k$ (nombre de clusters) et les paramètres de distance
 $(\alpha,\omega)$ sans labels. Ce rapport se concentre sur une méthode de la
 littérature : \textbf{nselectboot} (Fang \& Wang, 2012) qui minimise une \textbf{instabilité} mesurée par
 bootstrap. On teste une grille 21×21 en
-$(\alpha,\omega)$ sur quatre jeux de données ; les labels ne servent qu'à
+$(\alpha,\omega)$ sur trois jeux de données ; les labels ne servent qu'à
 évaluer l'ARI une fois $k$ choisi. Une étude sur données simulées complète le rapport : données artificielles
 où le vrai $k$ est connu.
 \end{abstract}
@@ -75,11 +75,11 @@ et $k$ : \textbf{bleu = faible instabilité (bon)}, \textbf{rouge = forte (mauva
   \item \textbf{$\omega$} : mélange distance fonctionnelle / distance sur $Z$.
 \end{itemize}
 
-Quatre jeux de données (labels uniquement pour \textbf{évaluer} après coup) :
-Canadian, AEMET, Growth, Tecator. Les $k_{\mathrm{vrai}}$ utilisés dans les
+Trois jeux de données (labels uniquement pour \textbf{évaluer} après coup) :
+Canadian Weather, Growth, Tecator. Les $k_{\mathrm{vrai}}$ utilisés dans les
 tableaux viennent des scripts \texttt{src/00\_preprocess*.R} : Canadian
-(\texttt{CanadianWeather\$region}), Growth (garçons/filles), AEMET et Tecator
-via des règles définies dans le projet (géographie / seuils sur la matière grasse)
+(\texttt{CanadianWeather\$region}), Growth (garçons/filles), Tecator
+via des règles définies dans le projet (seuils sur la matière grasse)
 --- ce ne sont pas des vérités « absolues », mais des références pour comparer les
 partitions.
 
@@ -120,8 +120,8 @@ Les fichiers \texttt{nselectboot\_*.csv} et les figures
 \subsection{Résumé sur la grille}
 
 En regardant la médiane des $k_\text{opt}$ sur les 441 couples : Canadian
-$\to 4$, AEMET $\to 4$, Growth $\to 2$, Tecator $\to 3$, cohérent avec les
-$k_{\mathrm{vrai}}$ retenus pour l'évaluation (sauf conventions sur AEMET/Tecator).
+$\to 4$, Growth $\to 2$, Tecator $\to 3$, cohérent avec les
+$k_{\mathrm{vrai}}$ retenus pour l'évaluation (sauf conventions sur Tecator).
 
 % ============================================================================
 \section{Résultats : triplets retenus pour l'évaluation (nselectboot)}
@@ -140,7 +140,6 @@ dans \texttt{generate\_confusion\_nselectboot.R}.
 \textbf{Dataset} & $k_{\mathrm{vrai}}$ & $k$ & $(\alpha,\omega)$ & ARI \\
 \midrule
 Canadian & 4 & 4 & (0.25,\,0.15) & 0.62 \\
-AEMET    & 4 & 4 & (0.35,\,0.20) & 0.39 \\
 Growth   & 2 & 2 & (0.10,\,0.05) & 0.42 \\
 Tecator  & 3 & 3 & (0.75,\,0.10) & 0.58 \\
 \bottomrule
@@ -166,21 +165,6 @@ Arctic & 0 & 0 & 3 & 0 \\
 Atlantic & 15 & 0 & 0 & 0 \\
 Continental & 1 & 6 & 5 & 0 \\
 Pacific & 0 & 4 & 0 & 1 \\
-\bottomrule
-\end{tabular}
-\end{center}
-
-\paragraph{AEMET} ($k=4$, ARI 0.39)
-\begin{center}
-\small
-\begin{tabular}{lrrrr}
-\toprule
-& C1 & C2 & C3 & C4 \\
-\midrule
-Atlantique & 9 & 4 & 0 & 0 \\
-Continental & 2 & 19 & 0 & 0 \\
-Mediterranee & 0 & 3 & 15 & 0 \\
-Sud & 0 & 3 & 10 & 8 \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -222,11 +206,6 @@ $\times$ = meilleur $(\alpha,\omega)$ pour ce $k$ (voir script d'analyse).
 \subsection{Canadian}
 \begin{center}
 \includegraphics[width=0.85\textwidth]{figures/nselectboot_heatmap_canadian.png}
-\end{center}
-
-\subsection{AEMET}
-\begin{center}
-\includegraphics[width=0.85\textwidth]{figures/nselectboot_heatmap_aemet.png}
 \end{center}
 
 \subsection{Growth}
@@ -325,7 +304,7 @@ L'expérience 1 s'appuie sur une méthode publiée (instabilité bootstrap, Fang
 Wang) pour choisir $k$ à $(\alpha,\omega)$ fixé, puis explore toute la grille.
 Les labels servent uniquement à l'ARI et aux matrices de confusion, pas au choix
 de $(k,\alpha,\omega)$. Les études sur données simulées illustrent la méthode quand
-le vrai $k$ est connu ; elles ne remplacent pas l'étude sur les quatre jeux réels.
+le vrai $k$ est connu ; elles ne remplacent pas l'étude sur les trois jeux réels.
 
 \vspace{1em}
 \noindent\textbf{Références :}
