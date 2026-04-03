@@ -19,29 +19,35 @@ La particularité de ces données est qu'un même individu est caractérisé sim
 1. **Une composante fonctionnelle** : Une courbe continue projetée sur un espace de Hilbert $L^2$.
 2. **Une composante vectorielle** : Un vecteur discret classique mesuré dans $\mathbb{R}^p$.
 
-Le défi mathématique fondamental consiste à formuler une géométrie commune pour ces deux espaces sans occulter leur corrélation sous-jacente. Ce projet propose, compare et critique différentes architectures, notamment en proposant une \textbf{hybridation précoce (HFV)}.
+Le défi mathématique fondamental consiste à formuler une géométrie commune pour ces deux espaces sans occulter leur corrélation sous-jacente. Ce projet propose, compare et critique différentes architectures, notamment en proposant une **hybridation précoce (HFV)**.
 
 ## 🧠 Les 4 Stratégies de Clustering Comparées
 
 Le pipeline R implémente et compare rigoureusement différentes méthodes de fusion :
 
 ### 1. Architectures d'Hybridation Tardive
-Ces méthodes modélisent des distances sur les variations fonctionnelles ($D_0$, $D_1$) et vectorielles ($D_s$) isolément avant de les regrouper de manière \textit{ad-hoc}.
+Ces méthodes modélisent des distances sur les variations fonctionnelles ($D_0$, $D_1$) et vectorielles ($D_s$) isolément avant de les regrouper de manière *ad-hoc*.
 
 - **Stratégie A (RS-PCA + $k$-means) :** Extraction des scores des courbes via ACP Fonctionnelle (FPCA). Banalisation des deux modalités par simple concaténation, suivie d'un algorithme $k$-means.
 - **Stratégie B (Distance Additive $D_w$) :** Construction d'une dissimilarité pondérée normalisée combinant l'amplitude, les gradients et les vecteurs :
-  $$ D_w(\alpha,\omega) = \sqrt{\omega \underbrace{\bigl[(1-\alpha)\tilde{D}_0^2 + \alpha\tilde{D}_1^2\bigr]}_{D_p(\alpha)^2} + (1-\omega)\tilde{D}_s^2} $$
+$$
+D_w(\alpha,\omega) = \sqrt{\omega \underbrace{\bigl[(1-\alpha)\tilde{D}_0^2 + \alpha\tilde{D}_1^2\bigr]}_{D_p(\alpha)^2} + (1-\omega)\tilde{D}_s^2}
+$$
   Suivie d'un Partitioning Around Medoids (PAM).
 - **Stratégie C (Produit de Noyaux $D_K$) :** Exigence stricte de similarité simultanée via la multiplication de noyaux gaussiens $K_f \cdot K_s$ ; la matrice de dissimilarité associée s'écrit :
-  $$ D_K(i,j) = \sqrt{K(i,i) + K(j,j) - 2K(i,j)} $$
+$$
+D_K(i,j) = \sqrt{K(i,i) + K(j,j) - 2K(i,j)}
+$$
 
 ### 2. L'Innovation : L'Hybridation Précoce (HFV)
 *Principal apport théorique implémenté permettant d'outrepasser les limites de l'hybridation tardive.*
 Au lieu de fusionner des dissimilarités en surface, l'algorithme "Hybride Fonctionnel-Vectoriel" (HFV) crée un espace hybride fondé sur la covariance croisée en amont de tout maillage géométrique.
 
 *   On estime une **Matrice de Covariance Jointe** unifiant les variances marginales et les variances *croisées*.
-  $$ V = \begin{bmatrix} V_y & V_{yx} \\ V_{xy} & V_x \end{bmatrix} $$
-*   Le ratio de trace garantit l'équilibrage des énergies: $r = \mathrm{tr}(\mathrm{Cov}(\eta)) / \mathrm{tr}(\mathrm{Cov}(\gamma))$.
+$$
+V = \begin{bmatrix} V_y & V_{yx} \\ V_{xy} & V_x \end{bmatrix}
+$$
+*   Le ratio de trace garantit l'équilibrage des énergies: $r = \frac{\mathrm{tr}(\mathrm{Cov}(\eta))}{\mathrm{tr}(\mathrm{Cov}(\gamma))}$.
 *   La diagonalisation offre des composantes informées de l'influence mutuelle des variables, reconstruites dans $L^2$ avant clustering.
 
 ---
